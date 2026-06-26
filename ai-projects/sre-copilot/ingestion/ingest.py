@@ -1,110 +1,78 @@
 import os
 import chromadb
+from chromadb.utils import embedding_functions
 
-
+# -----------------------------
+# Paths
+# -----------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 DOCS_PATH = os.path.join(BASE_DIR, "docs")
 VECTOR_PATH = os.path.join(BASE_DIR, "vectorstore")
 
-client = chromadb.PersistentClient(
-    path=VECTOR_PATH
-)
+# -----------------------------
+# ChromaDB setup
+# -----------------------------
+client = chromadb.PersistentClient(path=VECTOR_PATH)
 
 collection = client.get_or_create_collection(
     name="sre_knowledge"
 )
 
+# Clear old data (safe reset)
 try:
-    collection.delete(
-        ids=collection.get()["ids"]
-    )
+    collection.delete(where={})
 except:
     pass
 
+
+# -----------------------------
+# Load documents
+# -----------------------------
 def load_documents():
-    documents = []
+    docs = []
 
-    for filename in os.listdir(DOCS_PATH):
-        if filename.endswith(".md"):
-            filepath = os.path.join(DOCS_PATH, filename)
+    for file in os.listdir(DOCS_PATH):
+        if file.endswith(".md"):
+            with open(os.path.join(DOCS_PATH, file), "r") as f:
+                docs.append({
+                    "filename": file,
+                    "content": f.read()
+                })
 
-            with open(filepath, "r") as file:
-                content = file.read()
+    return docs
 
-            documents.append(
-                {
-                    "filename": filename,
-                    "content": content
-                }
-            )
 
-    return documents
-
-def split_into_chunks(text, max_length=500):
-
-    paragraphs = text.split("\n\n")
-
+# -----------------------------
+# Chunking logic (VERY IMPORTANT IN INTERVIEWS)
+# -----------------------------
+def chunk_text(text, chunk_size=300, overlap=50):
     chunks = []
-    current_chunk = ""
+    start = 0
 
-    for paragraph in paragraphs:
-
-        paragraph = paragraph.strip()
-
-        if not paragraph:
-            continue
-
-        if len(current_chunk) + len(paragraph) < max_length:
-
-            current_chunk += paragraph + "\n\n"
-
-        else:
-
-            chunks.append(current_chunk.strip())
-            current_chunk = paragraph + "\n\n"
-
-    if current_chunk:
-        chunks.append(current_chunk.strip())
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start = end - overlap
 
     return chunks
+
+
+# -----------------------------
+# Build vector DB
+# -----------------------------
 docs = load_documents()
 
-all_chunks = []
-
 for doc in docs:
+    chunks = chunk_text(doc["content"])
 
-    chunks = split_into_chunks(doc["content"])
+    for i, chunk in enumerate(chunks):
+        collection.add(
+            documents=[chunk],
+            ids=[f"{doc['filename']}_{i}"],
+            metadatas=[{
+                "source": doc["filename"],
+                "chunk": i
+            }]
+        )
 
-    for index, chunk in enumerate(chunks):
-
-        chunk_data = {
-            "text": chunk,
-            "source": doc["filename"],
-            "chunk_id": index + 1
-        }
-
-        all_chunks.append(chunk_data)
-
-for chunk in all_chunks:
-
-    collection.add(
-        documents=[
-            chunk["text"]
-        ],
-        metadatas=[
-            {
-                "source": chunk["source"],
-                "chunk_id": chunk["chunk_id"]
-            }
-        ],
-        ids=[
-            f'{chunk["source"]}_{chunk["chunk_id"]}'
-        ]
-    )
-
-    print(
-        "Stored:",
-        chunk["source"],
-        chunk["chunk_id"]
-    )
+        print(f"Stored: {doc['filename']} {i}")

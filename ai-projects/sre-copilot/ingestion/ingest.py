@@ -1,78 +1,55 @@
+# ingestion/ingest.py
+
 import os
-import chromadb
-from chromadb.utils import embedding_functions
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
+import pickle
 
-# -----------------------------
-# Paths
-# -----------------------------
+# -------------------------
+# PATHS
+# -------------------------
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DOCS_PATH = os.path.join(BASE_DIR, "docs")
-VECTOR_PATH = os.path.join(BASE_DIR, "vectorstore")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
-# -----------------------------
-# ChromaDB setup
-# -----------------------------
-client = chromadb.PersistentClient(path=VECTOR_PATH)
+os.makedirs(DATA_DIR, exist_ok=True)
 
-collection = client.get_or_create_collection(
-    name="sre_knowledge"
-)
+# -------------------------
+# SAMPLE RUNBOOK DATA
+# -------------------------
+documents = [
+    "CrashLoopBackOff occurs when a container repeatedly crashes on startup.",
+    "ImagePullBackOff occurs when Kubernetes cannot pull container image due to auth or wrong image name.",
+    "SEV1 incident requires immediate bridge call and stakeholder notification.",
+    "Pod stuck in Pending usually means insufficient resources or node scheduling issues.",
+    "High CPU usage in pods can be caused by traffic spikes or inefficient code."
+]
 
-# Clear old data (safe reset)
-try:
-    collection.delete(where={})
-except:
-    pass
+# -------------------------
+# EMBEDDING MODEL
+# -------------------------
+print("🔧 Loading embedding model...")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
+print("🔧 Encoding documents...")
+embeddings = model.encode(documents)
+embeddings = np.array(embeddings).astype("float32")
 
-# -----------------------------
-# Load documents
-# -----------------------------
-def load_documents():
-    docs = []
+# -------------------------
+# FAISS INDEX
+# -------------------------
+print("🔧 Building FAISS index...")
+index = faiss.IndexFlatL2(embeddings.shape[1])
+index.add(embeddings)
 
-    for file in os.listdir(DOCS_PATH):
-        if file.endswith(".md"):
-            with open(os.path.join(DOCS_PATH, file), "r") as f:
-                docs.append({
-                    "filename": file,
-                    "content": f.read()
-                })
+# Save index
+index_path = os.path.join(DATA_DIR, "sre.index")
+faiss.write_index(index, index_path)
 
-    return docs
+# Save docs
+docs_path = os.path.join(DATA_DIR, "docs.pkl")
+with open(docs_path, "wb") as f:
+    pickle.dump(documents, f)
 
+print(f"✅ Ingestion complete. FAISS index: {index_path}, docs: {docs_path}")
 
-# -----------------------------
-# Chunking logic (VERY IMPORTANT IN INTERVIEWS)
-# -----------------------------
-def chunk_text(text, chunk_size=300, overlap=50):
-    chunks = []
-    start = 0
-
-    while start < len(text):
-        end = start + chunk_size
-        chunks.append(text[start:end])
-        start = end - overlap
-
-    return chunks
-
-
-# -----------------------------
-# Build vector DB
-# -----------------------------
-docs = load_documents()
-
-for doc in docs:
-    chunks = chunk_text(doc["content"])
-
-    for i, chunk in enumerate(chunks):
-        collection.add(
-            documents=[chunk],
-            ids=[f"{doc['filename']}_{i}"],
-            metadatas=[{
-                "source": doc["filename"],
-                "chunk": i
-            }]
-        )
-
-        print(f"Stored: {doc['filename']} {i}")

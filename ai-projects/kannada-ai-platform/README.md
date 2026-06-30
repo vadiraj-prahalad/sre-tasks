@@ -1,26 +1,17 @@
-# Kannada AI Platform
-
-A Kannada-first AI knowledge platform built with FastAPI, trusted knowledge lookup, query normalization, and local LLM fallback using Ollama.
-
-## Current Features
-
-- FastAPI backend
-- `/health` endpoint
-- `/ask` endpoint
-- Trusted Kannada knowledge base
-- Query normalization for English/Kanglish inputs
-- Local LLM fallback using Ollama
-- Repository layer for knowledge data
-- Config layer for LLM settings
-
 ## Architecture
+
+The current MVP architecture is documented here:
+
+- [Architecture v1](docs/architecture/architecture-v1.png)
+
+The system follows a knowledge-first approach:
 
 ```text
 User
  ↓
-FastAPI API Layer
+FastAPI
  ↓
-Router Layer
+Router
  ↓
 Query Normalizer
  ↓
@@ -28,11 +19,13 @@ Knowledge Service
  ↓
 Knowledge Repository
  ↓
-Kannada JSON Knowledge Base
+Trusted Kannada JSON Data
 
 Fallback:
 Router
  ↓
-Local LLM Client
+Local LLM
  ↓
 Ollama / Llama3
+````
+

@@ -31,3 +31,44 @@ knowledge_repository.py
 kannada_facts.json
  ↓
 Trusted Kannada response
+
+```
+
+## 2026-07-01 - Full Stack MVP Milestone
+
+### Completed
+- Added SQLite metadata migration
+- Added CRUD utilities
+- Added search utility
+- Added alias resolution
+- Added React frontend using Vite
+- Connected React frontend to FastAPI backend
+- Fixed CORS issue
+- Verified UI can ask `madhwa` and receive trusted Kannada answer
+
+### Architecture
+Frontend:
+React → api.js → FastAPI
+
+Backend:
+FastAPI → Router → Alias Resolver → Knowledge Service → Repository → SQLite
+
+Admin:
+CLI Tools → Knowledge Admin Service → Repository → SQLite
+
+### Important Learnings
+- Swagger is developer API UI
+- CORS controls browser-to-backend access
+- React uses state to update UI
+- Frontend should use services/api.js instead of calling backend directly inside every component
+
+### Next Session
+- Refactor frontend into components:
+  - Header
+  - Home
+  - SearchBox
+  - AnswerCard
+  - Suggestions
+  - Footer
+- Improve UI identity around Kannada knowledge platform
+- Start PWA setup after component structure

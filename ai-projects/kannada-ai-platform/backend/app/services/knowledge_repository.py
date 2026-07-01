@@ -149,3 +149,24 @@ def search_knowledge_items(search_text: str) -> list[dict]:
         )
 
     return results
+def find_answer_by_key(canonical_key: str) -> str | None:
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT answer
+        FROM knowledge_items
+        WHERE canonical_key = ?
+          AND status = 'published'
+        """,
+        (canonical_key,),
+    )
+
+    row = cursor.fetchone()
+    connection.close()
+
+    if row:
+        return row[0]
+
+    return None

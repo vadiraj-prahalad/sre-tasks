@@ -1,4 +1,5 @@
 from app.services.knowledge_repository import load_all_facts
+from app.services.knowledge_repository import find_answer_by_key
 
 
 def find_known_answer(question: str) -> str | None:
@@ -17,3 +18,5 @@ def find_known_answer(question: str) -> str | None:
         return facts["ನಮಸ್ಕಾರ ಎಂದರೇನು?"]
 
     return None
+def find_known_answer_by_key(canonical_key: str) -> str | None:
+    return find_answer_by_key(canonical_key)

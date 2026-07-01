@@ -50,12 +50,21 @@ function App() {
         {error && <div className="error">{error}</div>}
 
         {answer && (
-          <div className="answer-card">
-            <h2>ವಿಶ್ವಾಸಾರ್ಹ ಉತ್ತರ</h2>
-            <p>{answer}</p>
-          </div>
-        )}
+  	  <div className="answer-card">
+          <h2>ವಿಶ್ವಾಸಾರ್ಹ ಉತ್ತರ</h2>
 
+          {answer.split("\n\nಮೂಲ:")[0] && (
+          <p>{answer.split("\n\nಮೂಲ:")[0]}</p>
+          )}
+
+          {answer.includes("\n\nಮೂಲ:") && (
+          <div className="source-box">
+          <strong>ಮೂಲ:</strong>
+          <span>{answer.split("\n\nಮೂಲ:")[1]}</span>
+        </div>
+      )}
+     </div>
+)}
         <div className="suggestions">
           <button onClick={() => setQuestion("ಅಣ್ಣಾವ್ರು")}>ಅಣ್ಣಾವ್ರು</button>
           <button onClick={() => setQuestion("madhwa")}>madhwa</button>

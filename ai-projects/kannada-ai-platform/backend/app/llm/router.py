@@ -1,6 +1,7 @@
 from app.services.alias_service import resolve_alias
 from app.services.knowledge_service import find_known_answer, find_known_answer_by_key
 from app.services.query_normalizer import normalize_question
+from app.services.rag_service import answer_from_rag
 
 
 def route_llm(prompt: str) -> str:
@@ -18,5 +19,10 @@ def route_llm(prompt: str) -> str:
 
     if known_answer:
         return known_answer
+
+    rag_answer = answer_from_rag(prompt)
+
+    if rag_answer:
+        return rag_answer
 
     return "ಈ ವಿಷಯದ ವಿಶ್ವಾಸಾರ್ಹ ಮಾಹಿತಿಯನ್ನು ಇನ್ನೂ ಸೇರಿಸಲಾಗಿಲ್ಲ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."

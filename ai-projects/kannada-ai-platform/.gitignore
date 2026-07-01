@@ -19,3 +19,9 @@ venv/
 
 # IDE
 .idea/
+
+# SQLite local databases
+
+backend/app/db/*.db
+
+backend/app/db/**/*.db

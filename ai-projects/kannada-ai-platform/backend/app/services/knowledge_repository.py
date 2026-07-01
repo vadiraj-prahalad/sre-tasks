@@ -1,10 +1,27 @@
-import json
+import sqlite3
 from pathlib import Path
 
 
-DATA_FILE = Path(__file__).resolve().parent.parent / "data" / "kannada_facts.json"
+DB_PATH = Path(__file__).resolve().parent.parent / "db" / "knowledge.db"
 
 
 def load_all_facts() -> dict:
-    with open(DATA_FILE, "r", encoding="utf-8") as file:
-        return json.load(file)
+    connection = sqlite3.connect(DB_PATH)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT canonical_question, answer
+        FROM knowledge_items
+        """
+    )
+
+    rows = cursor.fetchall()
+    connection.close()
+
+    facts = {}
+
+    for canonical_question, answer in rows:
+        facts[canonical_question] = answer
+
+    return facts

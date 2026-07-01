@@ -1,0 +1,100 @@
+.app {
+  min-height: 100vh;
+  background: #f7f4ff;
+  color: #1f1f29;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.hero {
+  width: 100%;
+  max-width: 760px;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.hero p {
+  font-size: 18px;
+  color: #555;
+  margin-bottom: 32px;
+}
+
+.search-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(61, 45, 120, 0.12);
+  display: flex;
+  gap: 12px;
+  flex-direction: column;
+}
+
+textarea {
+  width: 100%;
+  font-size: 18px;
+  padding: 16px;
+  border: 1px solid #ddd7f3;
+  border-radius: 14px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+button {
+  border: none;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background: #5b35d5;
+  color: white;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.answer-card {
+  margin-top: 28px;
+  background: white;
+  border-radius: 20px;
+  padding: 24px;
+  text-align: left;
+  box-shadow: 0 12px 30px rgba(61, 45, 120, 0.12);
+}
+
+.answer-card h2 {
+  margin-top: 0;
+  color: #2f1f87;
+}
+
+.answer-card p {
+  font-size: 18px;
+  line-height: 1.8;
+  color: #222;
+}
+
+.error {
+  margin-top: 20px;
+  color: #b00020;
+}
+
+.suggestions {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.suggestions button {
+  background: white;
+  color: #5b35d5;
+  border: 1px solid #ddd7f3;
+}

@@ -6,6 +6,7 @@ from pathlib import Path
 from app.llm.local_llm import get_llm_response
 from app.services.answer_strategy import should_use_direct_answer
 from app.services.embedding_service import get_embedding
+from backend.app.db.tools.semantic_search_chunks import keyword_bonus
 
 
 DB_PATH = Path(__file__).resolve().parent.parent / "db" / "knowledge.db"
@@ -52,12 +53,15 @@ def semantic_search_chunks(question: str, limit: int = 3) -> list[dict]:
         chunk_text = row[0]
         chunk_embedding = json.loads(row[1])
 
-        score = cosine_similarity(question_embedding, chunk_embedding)
-
+        semantic_score = cosine_similarity(question_embedding, chunk_embedding)
+        bonus = keyword_bonus(question, chunk_text)
+        score = semantic_score + bonus
         scored_chunks.append(
             {
                 "chunk_text": chunk_text,
                 "score": score,
+                "semantic_score": semantic_score,
+                "keyword_bonus": bonus,
                 "title": row[2],
                 "source_name": row[3],
                 "source_url": row[4],
@@ -124,3 +128,20 @@ def answer_from_rag(question: str) -> str | None:
     answer = get_llm_response(prompt)
 
     return f"{answer}\n\n{sources_text}"
+
+def keyword_bonus(search_text: str, chunk_text: str) -> float:
+    keywords = [
+        word.strip().lower()
+        for word in search_text.split()
+        if len(word.strip()) >= 3
+    ]
+
+    chunk_lower = chunk_text.lower()
+
+    matched_keywords = 0
+
+    for keyword in keywords:
+        if keyword in chunk_lower:
+            matched_keywords += 1
+
+    return matched_keywords * 0.05

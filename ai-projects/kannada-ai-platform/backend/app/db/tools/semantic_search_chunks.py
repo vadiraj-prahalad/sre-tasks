@@ -21,6 +21,22 @@ def cosine_similarity(vector_a: list[float], vector_b: list[float]) -> float:
 
     return dot_product / (magnitude_a * magnitude_b)
 
+def keyword_bonus(search_text: str, chunk_text: str) -> float:
+    keywords = [
+        word.strip().lower()
+        for word in search_text.split()
+        if len(word.strip()) >= 3
+    ]
+
+    chunk_lower = chunk_text.lower()
+
+    matched_keywords = 0
+
+    for keyword in keywords:
+        if keyword in chunk_lower:
+            matched_keywords += 1
+
+    return matched_keywords * 0.05
 
 def semantic_search(search_text: str, limit: int = 3) -> list[dict]:
     query_embedding = get_embedding(search_text)
@@ -56,12 +72,15 @@ def semantic_search(search_text: str, limit: int = 3) -> list[dict]:
         source_name = row[4]
         source_url = row[5]
 
-        score = cosine_similarity(query_embedding, chunk_embedding)
-
+        semantic_score = cosine_similarity(query_embedding, chunk_embedding)
+        bonus = keyword_bonus(search_text, chunk_text)
+        score = semantic_score + bonus
         scored_results.append(
             {
                 "chunk_id": chunk_id,
                 "score": score,
+                "semantic_score": semantic_score,
+                "keyword_bonus": bonus,
                 "chunk_text": chunk_text,
                 "title": title,
                 "source_name": source_name,
@@ -92,6 +111,8 @@ def main() -> None:
     for item in results:
         print(f"Chunk ID: {item['chunk_id']}")
         print(f"Score: {item['score']:.4f}")
+        print(f"Semantic Score: {item['semantic_score']:.4f}")
+        print(f"Keyword Bonus: {item['keyword_bonus']:.4f}")
         print(f"Title: {item['title']}")
         print(f"Source: {item['source_name']}")
         print(f"Text: {item['chunk_text']}")

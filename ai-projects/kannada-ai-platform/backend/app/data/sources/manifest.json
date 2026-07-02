@@ -1,0 +1,22 @@
+[
+  {
+    "source_id": "madhwacharya_dvaita",
+    "title": "Madhwacharya and Dvaita Vedanta",
+    "file": "madhwacharya_dvaita.txt",
+    "category": "philosophy",
+    "language": "kn",
+    "source_name": "Curated Internal Knowledge",
+    "trust_level": "high",
+    "review_status": "reviewed"
+  },
+  {
+    "source_id": "rajkumar_culture",
+    "title": "Dr Rajkumar and Kannada Culture",
+    "file": "rajkumar_culture.txt",
+    "category": "culture",
+    "language": "kn",
+    "source_name": "Curated Internal Knowledge",
+    "trust_level": "high",
+    "review_status": "reviewed"
+  }
+]

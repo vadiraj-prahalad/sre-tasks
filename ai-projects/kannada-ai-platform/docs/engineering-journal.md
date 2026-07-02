@@ -72,3 +72,41 @@ CLI Tools → Knowledge Admin Service → Repository → SQLite
   - Footer
 - Improve UI identity around Kannada knowledge platform
 - Start PWA setup after component structure
+
+## 2026-07-02 - Multi-document RAG & Knowledge Acquisition
+
+### Hours
+Approx. 9 hours
+
+### Completed
+
+- Added reusable text ingestion pipeline
+- Introduced manifest.json for source management
+- Added ingest_all_sources.py
+- Added Knowledge Library CLI
+- Added second knowledge document (Dr Rajkumar)
+- Generated embeddings for multiple documents
+- Implemented Hybrid Ranking (Semantic + Keyword Boost)
+- Verified multi-document retrieval
+- Identified need for Retriever Service refactor
+
+### Key Learnings
+
+- Semantic search alone may rank related documents too closely.
+- Hybrid ranking significantly improves retrieval quality.
+- Manifest-driven ingestion scales better than hardcoded scripts.
+- RAG quality depends heavily on source quality.
+
+### Known Issues
+
+- rag_service.py still contains retrieval logic.
+- Multiple sources are always passed to the LLM.
+- Source selection should be improved.
+
+### Next Session
+
+- Create retriever_service.py
+- Move hybrid ranking into retriever service
+- Improve top-k selection
+- Return only relevant sources
+- Resume React UI improvements

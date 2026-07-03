@@ -4,10 +4,7 @@ import "./App.css";
 
 function splitAnswerAndSources(rawAnswer) {
   if (!rawAnswer.includes("\n\nಮೂಲ:")) {
-    return {
-      answerText: rawAnswer,
-      sources: [],
-    };
+    return { answerText: rawAnswer, sources: [] };
   }
 
   const parts = rawAnswer.split("\n\nಮೂಲ:");
@@ -27,6 +24,8 @@ function App() {
   const [question, setQuestion] = useState("");
   const [lastQuestion, setLastQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [trace, setTrace] = useState([]);
+  const [showTrace, setShowTrace] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -39,11 +38,14 @@ function App() {
     setLoading(true);
     setError("");
     setAnswer("");
+    setTrace([]);
+    setShowTrace(false);
     setLastQuestion(question);
 
     try {
-      const data = await askQuestion(question);
+      const data = await askQuestion(question, true);
       setAnswer(data.answer);
+      setTrace(data.trace || []);
     } catch (err) {
       setError("Backend ಸಂಪರ್ಕದಲ್ಲಿ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.");
     } finally {
@@ -82,8 +84,8 @@ function App() {
           <button onClick={() => setQuestion("ವಿಷ್ಣುವರ್ಧನ್ ಯಾರು?")}>
             ವಿಷ್ಣುವರ್ಧನ್
           </button>
-          <button onClick={() => setQuestion("ಕುವೆಂಪು ಕನ್ನಡ ಸಾಹಿತ್ಯ")}>
-            ಕುವೆಂಪು
+          <button onClick={() => setQuestion("ಮಧ್ವಾಚಾರ್ಯರ ದ್ವೈತ ತತ್ವವನ್ನು ವಿವರಿಸಿ")}>
+            ಮಧ್ವಾಚಾರ್ಯ
           </button>
         </div>
 
@@ -126,6 +128,31 @@ function App() {
                           📄 {source}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {trace.length > 0 && (
+                    <div className="trace-card">
+                      <button
+                        className="trace-toggle"
+                        onClick={() => setShowTrace(!showTrace)}
+                      >
+                        {showTrace ? "🐞 Hide Developer Trace" : "🐞 Show Developer Trace"}
+                      </button>
+
+                      {showTrace && (
+                        <div className="trace-list">
+                          {trace.map((item, index) => (
+                            <div className="trace-item" key={`${item.step}-${index}`}>
+                              <div className="trace-step">
+                                ✅ {index + 1}. {item.step}
+                              </div>
+                              <div className="trace-status">{item.status}</div>
+                              <div className="trace-details">{item.details}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

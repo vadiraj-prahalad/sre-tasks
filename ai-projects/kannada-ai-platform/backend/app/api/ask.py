@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.llm.router import route_llm
+from app.llm.router import route_llm, route_llm_with_trace
 
 
 router = APIRouter()
@@ -11,35 +11,30 @@ def ask_question(payload: dict):
     question = payload.get("question", "")
     debug = payload.get("debug", False)
 
+    if debug:
+        result = route_llm_with_trace(question)
+
+        return {
+            "question": question,
+            "answer": result["answer"],
+            "trace": [
+                {
+                    "step": "POST /ask",
+                    "status": "received",
+                    "details": f"Question received: {question}",
+                },
+                *result["trace"],
+                {
+                    "step": "Response",
+                    "status": "completed",
+                    "details": "Answer returned to frontend.",
+                },
+            ],
+        }
+
     response = route_llm(question)
 
-    result = {
+    return {
         "question": question,
         "answer": response,
     }
-
-    if debug:
-        result["trace"] = [
-            {
-                "step": "POST /ask",
-                "status": "received",
-                "details": f"Question received: {question}",
-            },
-            {
-                "step": "Router",
-                "status": "completed",
-                "details": "Question routed through LLM router.",
-            },
-            {
-                "step": "RAG / LLM",
-                "status": "completed",
-                "details": "Answer generated from configured route.",
-            },
-            {
-                "step": "Response",
-                "status": "completed",
-                "details": "Answer returned to frontend.",
-            },
-        ]
-
-    return result

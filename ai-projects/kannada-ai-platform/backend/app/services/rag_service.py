@@ -19,15 +19,20 @@ def build_sources_text(chunks: list[dict]) -> str:
 
 def build_prompt(context: str, question: str) -> str:
     return f"""
-ನೀವು ವಿಶ್ವಾಸಾರ್ಹ ಕನ್ನಡ ಜ್ಞಾನ ಸಹಾಯಕರು.
+You are a trusted Kannada knowledge assistant.
 
-ಕಟ್ಟುನಿಟ್ಟಿನ ನಿಯಮಗಳು:
-1. ಕೆಳಗಿನ ಮೂಲ ಮಾಹಿತಿಯನ್ನು ಮಾತ್ರ ಬಳಸಿ ಉತ್ತರಿಸಿ.
-2. ಮೂಲ ಮಾಹಿತಿಯಲ್ಲಿ ಇಲ್ಲದ ವಿಷಯವನ್ನು ಸೇರಿಸಬೇಡಿ.
-3. ಮೂಲದಲ್ಲಿರುವ ತತ್ತ್ವ, ಹೆಸರು, ಸಂಬಂಧ, ಅರ್ಥಗಳನ್ನು ಬದಲಾಯಿಸಬೇಡಿ.
-4. "ಭೇದವಿದೆ" ಎಂದಿದ್ದರೆ ಅದನ್ನು "ಭೇದವಿಲ್ಲ" ಎಂದು ಬದಲಾಯಿಸಬೇಡಿ.
-5. ಉತ್ತರ ಚಿಕ್ಕದಾಗಿ, ಸ್ಪಷ್ಟವಾಗಿ ಮತ್ತು ಸರಳ ಕನ್ನಡದಲ್ಲಿ ಇರಲಿ.
-6. ಖಚಿತ ಮಾಹಿತಿ ಇಲ್ಲದಿದ್ದರೆ: "ಮೂಲ ಮಾಹಿತಿಯಲ್ಲಿ ಇದಕ್ಕೆ ಸ್ಪಷ್ಟ ಉತ್ತರ ಇಲ್ಲ." ಎಂದು ಹೇಳಿ.
+Fact rules:
+1. Use only the supplied context.
+2. Do not invent facts.
+3. Preserve names, titles, relationships, and meanings exactly.
+4. Answer only in Kannada.
+
+Kannada quality rules:
+1. ಉತ್ತರವು ಸಹಜ, ಶುದ್ಧ ಮತ್ತು ಓದಲು ಸುಲಭವಾದ ಕನ್ನಡದಲ್ಲಿ ಇರಲಿ.
+2. ಯಂತ್ರಾನುವಾದ ಶೈಲಿಯನ್ನು ತಪ್ಪಿಸಿ.
+3. ಗೌರವಪೂರ್ಣ ರೂಪಗಳನ್ನು ಸರಿಯಾಗಿ ಬಳಸಿ.
+4. ಅಗತ್ಯವಿಲ್ಲದ “ಅಭಿಪ್ರಾಯ”, “ಅರ್ಥ”, “ಎಂಬುದು” ಪದಗಳಿಂದ ಉತ್ತರ ಪ್ರಾರಂಭಿಸಬೇಡಿ.
+5. ಉತ್ತರ 3 ರಿಂದ 5 ವಾಕ್ಯಗಳಲ್ಲಿ ಇರಲಿ.
 
 ಮೂಲ ಮಾಹಿತಿ:
 {context}
@@ -39,26 +44,88 @@ def build_prompt(context: str, question: str) -> str:
 """
 
 
-def answer_from_rag(question: str) -> str | None:
+def answer_from_rag_with_trace(question: str) -> dict:
+    trace = []
+
     chunks = retrieve_chunks(question)
 
+    trace.append({
+        "step": "Retriever",
+        "status": "completed",
+        "details": f"Retrieved {len(chunks)} chunk(s).",
+    })
+
     if not chunks:
-        return None
+        return {
+            "answer": None,
+            "trace": trace,
+        }
 
     best_score = chunks[0]["score"]
+    best_title = chunks[0]["title"]
+
+    trace.append({
+        "step": "Top Source",
+        "status": "completed",
+        "details": f"{best_title} | score={best_score:.4f}",
+    })
 
     if best_score < MIN_SIMILARITY_SCORE:
-        return None
+        trace.append({
+            "step": "Score Check",
+            "status": "failed",
+            "details": f"Best score {best_score:.4f} below threshold.",
+        })
+        return {
+            "answer": None,
+            "trace": trace,
+        }
 
     sources_text = build_sources_text(chunks)
 
     if should_use_direct_answer(question):
+        trace.append({
+            "step": "Answer Strategy",
+            "status": "direct",
+            "details": "Direct answer selected. LLM skipped.",
+        })
+
         direct_answer = chunks[0]["chunk_text"]
-        return f"{direct_answer}\n\n{sources_text}"
+
+        return {
+            "answer": f"{direct_answer}\n\n{sources_text}",
+            "trace": trace,
+        }
+
+    trace.append({
+        "step": "Answer Strategy",
+        "status": "llm",
+        "details": "LLM generation selected.",
+    })
 
     context = "\n\n".join([chunk["chunk_text"] for chunk in chunks])
     prompt = build_prompt(context, question)
 
+    trace.append({
+        "step": "Prompt Builder",
+        "status": "completed",
+        "details": f"Prompt length: {len(prompt)} characters.",
+    })
+
     answer = get_llm_response(prompt)
 
-    return f"{answer}\n\n{sources_text}"
+    trace.append({
+        "step": "LLM",
+        "status": "completed",
+        "details": "Ollama response received.",
+    })
+
+    return {
+        "answer": f"{answer}\n\n{sources_text}",
+        "trace": trace,
+    }
+
+
+def answer_from_rag(question: str) -> str | None:
+    result = answer_from_rag_with_trace(question)
+    return result["answer"]

@@ -89,7 +89,10 @@ def retrieve_chunks(question: str, limit: int = 3) -> list[dict]:
 
     top_score = scored_chunks[0]["score"]
 
-    if top_score >= 0.90:
+    second_score = scored_chunks[1]["score"] if len(scored_chunks) > 1 else 0
+    score_gap = top_score - second_score
+
+    if top_score >= 0.85 or score_gap >= 0.05:
         return scored_chunks[:1]
 
     return scored_chunks[:limit]

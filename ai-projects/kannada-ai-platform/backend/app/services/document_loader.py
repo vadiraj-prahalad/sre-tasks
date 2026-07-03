@@ -15,11 +15,18 @@ def load_text_file(file_path: str) -> str:
     return content
 
 
+def load_markdown_file(file_path: str) -> str:
+    return load_text_file(file_path)
+
+
 def load_document(file_path: str) -> str:
     path = Path(file_path)
     suffix = path.suffix.lower()
 
     if suffix == ".txt":
         return load_text_file(file_path)
+
+    if suffix == ".md":
+        return load_markdown_file(file_path)
 
     raise ValueError(f"Unsupported document type: {suffix}")

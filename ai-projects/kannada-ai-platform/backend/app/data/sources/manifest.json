@@ -18,5 +18,35 @@
     "source_name": "Curated Internal Knowledge",
     "trust_level": "high",
     "review_status": "reviewed"
-  }
+  },
+  {
+  "source_id": "kuvempu_literature",
+  "title": "Kuvempu and Kannada Literature",
+  "file": "kuvempu_literature.md",
+  "category": "literature",
+  "language": "kn",
+  "source_name": "Curated Internal Knowledge",
+  "trust_level": "high",
+  "review_status": "reviewed"
+},
+{
+  "source_id": "purandara_dasa",
+  "title": "Purandara Dasa",
+  "file": "purandara_dasa.md",
+  "category": "music",
+  "language": "kn",
+  "source_name": "Curated Internal Knowledge",
+  "trust_level": "high",
+  "review_status": "reviewed"
+},
+{
+  "source_id": "vishnuvardhan_actor",
+  "title": "Dr Vishnuvardhan",
+  "file": "vishnuvardhan_actor.md",
+  "category": "cinema",
+  "language": "kn",
+  "source_name": "Curated Internal Knowledge",
+  "trust_level": "high",
+  "review_status": "reviewed"
+}
 ]

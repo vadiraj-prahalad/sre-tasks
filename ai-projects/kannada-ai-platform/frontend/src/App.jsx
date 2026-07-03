@@ -2,8 +2,30 @@ import { useState } from "react";
 import { askQuestion } from "./services/api";
 import "./App.css";
 
+function splitAnswerAndSources(rawAnswer) {
+  if (!rawAnswer.includes("\n\nಮೂಲ:")) {
+    return {
+      answerText: rawAnswer,
+      sources: [],
+    };
+  }
+
+  const parts = rawAnswer.split("\n\nಮೂಲ:");
+  const answerText = parts[0];
+
+  const sources = parts
+    .slice(1)
+    .join("\nಮೂಲ:")
+    .split("\nಮೂಲ:")
+    .map((source) => source.trim())
+    .filter(Boolean);
+
+  return { answerText, sources };
+}
+
 function App() {
   const [question, setQuestion] = useState("");
+  const [lastQuestion, setLastQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,6 +39,7 @@ function App() {
     setLoading(true);
     setError("");
     setAnswer("");
+    setLastQuestion(question);
 
     try {
       const data = await askQuestion(question);
@@ -28,50 +51,88 @@ function App() {
     }
   }
 
+  const { answerText, sources } = splitAnswerAndSources(answer);
+
   return (
     <main className="app">
       <section className="hero">
-        <h1>ಕನ್ನಡ ಜ್ಞಾನ ಸಹಾಯಕ</h1>
-        <p>ಕನ್ನಡ, ಸಂಸ್ಕೃತಿ, ಇತಿಹಾಸ ಮತ್ತು ಜ್ಞಾನಕ್ಕಾಗಿ ವಿಶ್ವಾಸಾರ್ಹ ಸಹಾಯಕ</p>
+        <div className="title-block">
+          <span className="badge">Kannada AI</span>
+          <h1>ಕನ್ನಡ ಜ್ಞಾನ ಸಹಾಯಕ</h1>
+          <p>ಕನ್ನಡ, ಸಂಸ್ಕೃತಿ, ಇತಿಹಾಸ ಮತ್ತು ಜ್ಞಾನಕ್ಕಾಗಿ ವಿಶ್ವಾಸಾರ್ಹ ಸಹಾಯಕ</p>
+        </div>
 
         <div className="search-card">
           <textarea
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="ಉದಾ: ಮಧ್ವಾಚಾರ್ಯರು ಯಾರು?"
+            placeholder="ಉದಾ: ಪುರಂದರ ದಾಸರು ಯಾರು?"
             rows="3"
           />
 
           <button onClick={handleAsk} disabled={loading}>
-            {loading ? "ಹುಡುಕುತ್ತಿದೆ..." : "ಪ್ರಶ್ನಿಸಿ"}
+            {loading ? "ಉತ್ತರ ಸಿದ್ಧಪಡಿಸುತ್ತಿದೆ..." : "ಪ್ರಶ್ನಿಸಿ"}
+          </button>
+        </div>
+
+        <div className="suggestions">
+          <button onClick={() => setQuestion("ಪುರಂದರ ದಾಸರು ಯಾರು?")}>
+            ಪುರಂದರ ದಾಸರು
+          </button>
+          <button onClick={() => setQuestion("ವಿಷ್ಣುವರ್ಧನ್ ಯಾರು?")}>
+            ವಿಷ್ಣುವರ್ಧನ್
+          </button>
+          <button onClick={() => setQuestion("ಕುವೆಂಪು ಕನ್ನಡ ಸಾಹಿತ್ಯ")}>
+            ಕುವೆಂಪು
           </button>
         </div>
 
         {error && <div className="error">{error}</div>}
 
-        {answer && (
-  	  <div className="answer-card">
-          <h2>ವಿಶ್ವಾಸಾರ್ಹ ಉತ್ತರ</h2>
+        {(lastQuestion || loading || answer) && (
+          <section className="chat-panel">
+            {lastQuestion && (
+              <div className="message user-message">
+                <div className="avatar">🙋</div>
+                <div>
+                  <p className="label">ನೀವು ಕೇಳಿದ್ದು</p>
+                  <p>{lastQuestion}</p>
+                </div>
+              </div>
+            )}
 
-          {answer.split("\n\nಮೂಲ:")[0] && (
-          <p>{answer.split("\n\nಮೂಲ:")[0]}</p>
-          )}
+            {loading && (
+              <div className="message ai-message">
+                <div className="avatar">🤖</div>
+                <div>
+                  <p className="label">AI ಉತ್ತರ</p>
+                  <p className="loading-text">ವಿಶ್ವಾಸಾರ್ಹ ಮೂಲಗಳಿಂದ ಹುಡುಕುತ್ತಿದೆ...</p>
+                </div>
+              </div>
+            )}
 
-          {answer.includes("\n\nಮೂಲ:") && (
-          <div className="source-box">
-          <strong>ಮೂಲ:</strong>
-          <span>{answer.split("\n\nಮೂಲ:")[1]}</span>
-        </div>
-      )}
-     </div>
-)}
-        <div className="suggestions">
-          <button onClick={() => setQuestion("ಅಣ್ಣಾವ್ರು")}>ಅಣ್ಣಾವ್ರು</button>
-          <button onClick={() => setQuestion("madhwa")}>madhwa</button>
-          <button onClick={() => setQuestion("ಬೆಂಗಳೂರು ಬಗ್ಗೆ ಹೇಳಿ")}>
-            ಬೆಂಗಳೂರು
-          </button>
-        </div>
+            {answer && !loading && (
+              <div className="message ai-message">
+                <div className="avatar">🤖</div>
+                <div className="answer-content">
+                  <p className="label">ವಿಶ್ವಾಸಾರ್ಹ ಉತ್ತರ</p>
+                  <p>{answerText}</p>
+
+                  {sources.length > 0 && (
+                    <div className="sources-card">
+                      <h3>📚 ಮೂಲಗಳು</h3>
+                      {sources.map((source) => (
+                        <div className="source-pill" key={source}>
+                          📄 {source}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
       </section>
     </main>
   );

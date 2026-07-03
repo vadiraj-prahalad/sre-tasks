@@ -115,7 +115,8 @@ def main() -> None:
         print(f"Keyword Bonus: {item['keyword_bonus']:.4f}")
         print(f"Title: {item['title']}")
         print(f"Source: {item['source_name']}")
-        print(f"Text: {item['chunk_text']}")
+        preview = item["chunk_text"][:160]
+        print(f"Text Preview: {preview}...")
         print("-" * 80)
 
 

@@ -2,20 +2,11 @@ import sqlite3
 import sys
 from pathlib import Path
 
+from app.services.chunking_service import split_into_chunks
+from app.services.document_loader import load_document
+
 
 DB_PATH = Path(__file__).resolve().parent.parent / "knowledge.db"
-
-
-def split_into_chunks(text: str, chunk_size: int = 120) -> list[str]:
-    words = text.split()
-    chunks = []
-
-    for start in range(0, len(words), chunk_size):
-        chunk = " ".join(words[start : start + chunk_size])
-        if chunk.strip():
-            chunks.append(chunk)
-
-    return chunks
 
 
 def ingest_text_document(
@@ -25,18 +16,11 @@ def ingest_text_document(
     category: str,
     language: str = "kn",
 ) -> None:
-    path = Path(file_path)
-
-    if not path.exists():
-        raise FileNotFoundError(f"Source file not found: {file_path}")
-
-    content = path.read_text(encoding="utf-8").strip()
-
-    if not content:
-        raise ValueError("Source file is empty")
+    content = load_document(file_path)
 
     connection = sqlite3.connect(DB_PATH)
     cursor = connection.cursor()
+
     cursor.execute(
         """
         SELECT id
@@ -53,7 +37,7 @@ def ingest_text_document(
         connection.close()
         print(f"Document already exists, skipping: {title}")
         return
-    
+
     cursor.execute(
         """
         INSERT INTO documents (
@@ -65,17 +49,10 @@ def ingest_text_document(
         )
         VALUES (?, ?, ?, ?, ?)
         """,
-        (
-            title,
-            source_name,
-            None,
-            category,
-            language,
-        ),
+        (title, source_name, None, category, language),
     )
 
     document_id = cursor.lastrowid
-
     chunks = split_into_chunks(content)
 
     for index, chunk_text in enumerate(chunks):
@@ -106,16 +83,11 @@ def main() -> None:
         )
         return
 
-    file_path = sys.argv[1]
-    title = sys.argv[2]
-    source_name = sys.argv[3]
-    category = sys.argv[4]
-
     ingest_text_document(
-        file_path=file_path,
-        title=title,
-        source_name=source_name,
-        category=category,
+        file_path=sys.argv[1],
+        title=sys.argv[2],
+        source_name=sys.argv[3],
+        category=sys.argv[4],
     )
 
 

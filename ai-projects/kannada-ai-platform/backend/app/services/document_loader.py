@@ -1,8 +1,18 @@
 from pathlib import Path
-from app.services.document_loader import load_document  
+
 
 def load_text_file(file_path: str) -> str:
-    content = load_document(file_path)
+    path = Path(file_path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Source file not found: {file_path}")
+
+    content = path.read_text(encoding="utf-8").strip()
+
+    if not content:
+        raise ValueError(f"Source file is empty: {file_path}")
+
+    return content
 
 
 def load_document(file_path: str) -> str:

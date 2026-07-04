@@ -114,11 +114,15 @@ def extract_keywords(question: str) -> list[str]:
         if len(word.strip()) >= 3
     ]
 
-    return [
+    keywords = [
         word for word in words
         if word not in stop_words
     ]
 
+    if "ಕೊಡುಗೆ" in question:
+        keywords.extend(["ಸರಳಿ", "ಜಂಟಿ", "ಅಲಂಕಾರ", "ಗೀತೆ"])
+
+    return keywords
 
 def score_sentence(sentence: str, keywords: list[str]) -> int:
     score = 0

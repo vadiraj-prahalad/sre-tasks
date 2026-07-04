@@ -1,19 +1,40 @@
-QUERY_MAP = {
-    "who is kuvempu": "ಕುವೆಂಪು ಯಾರು?",
-    "kuvempu yaru": "ಕುವೆಂಪು ಯಾರು?",
-    "tell me about bengaluru": "ಬೆಂಗಳೂರು ಬಗ್ಗೆ ಹೇಳಿ",
-    "namaskara meaning": "ನಮಸ್ಕಾರ ಎಂದರೇನು?",
-    "who is dr rajkumar": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್ ಯಾರು?",
-    "who is dr. rajkumar": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್ ಯಾರು?",
-    "dr rajkumar": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್ ಯಾರು?",
-    "rajkumar actor": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್ ಯಾರು?",
+import re
+
+
+NORMALIZATION_MAP = {
+
+    # Rajkumar
+    "ಡಾ ರಾಜಕುಮಾರ್": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್",
+    "ಡಾ. ರಾಜಕುಮಾರ್": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್",
+    "ರಾಜಕುಮಾರ್": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್",
+    "ರಾಜ್ ಕುಮಾರ್": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್",
+    "ಅಣ್ಣಾವ್ರು": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್",
+    "ನಟಸಾರ್ವಭೌಮ": "ಡಾ. ರಾಜ್‌ಕುಮಾರ್",
+
+    # Vishnuvardhan
+    "ವಿಷ್ಣುವರ್ಧನ": "ವಿಷ್ಣುವರ್ಧನ್",
+    "ಡಾ ವಿಷ್ಣುವರ್ಧನ್": "ಡಾ. ವಿಷ್ಣುವರ್ಧನ್",
+
+    # Madhwacharya
+    "ಮದ್ವಾಚಾರ್ಯ": "ಮಧ್ವಾಚಾರ್ಯ",
+    "ಮಧ್ವ": "ಮಧ್ವಾಚಾರ್ಯ",
+
+    # Kuvempu
+    "kuvempu": "ಕುವೆಂಪು",
+    "ಕುವೆಂಪೂ": "ಕುವೆಂಪು",
+
+    # Purandara
+    "ಪುರಂದರದಾಸ": "ಪುರಂದರ ದಾಸರು",
+
 }
 
 
 def normalize_question(question: str) -> str:
-    cleaned = question.strip().lower()
+    question = question.strip()
 
-    if cleaned in QUERY_MAP:
-        return QUERY_MAP[cleaned]
+    question = re.sub(r"\s+", " ", question)
 
-    return question.strip()
+    for original, replacement in NORMALIZATION_MAP.items():
+        question = question.replace(original, replacement)
+
+    return question

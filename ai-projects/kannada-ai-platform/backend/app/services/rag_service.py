@@ -1,6 +1,7 @@
 from app.llm.local_llm import get_llm_response
 from app.services.answer_strategy import should_use_direct_answer
 from app.services.retriever_service import retrieve_chunks
+from app.services.answer_composer import compose_direct_answer
 
 
 MIN_SIMILARITY_SCORE = 0.70
@@ -44,6 +45,35 @@ Kannada quality rules:
 """
 
 
+def calculate_confidence(best_score: float, is_direct_answer: bool, chunk_count: int) -> dict:
+    score_points = min(best_score, 1.0) * 70
+    direct_points = 20 if is_direct_answer else 10
+    source_points = 10 if chunk_count == 1 else 5
+
+    confidence = round(score_points + direct_points + source_points)
+
+    if confidence >= 90:
+        label = "High"
+        kannada_label = "ಹೆಚ್ಚು ವಿಶ್ವಾಸಾರ್ಹ"
+    elif confidence >= 75:
+        label = "Medium"
+        kannada_label = "ಮಧ್ಯಮ ವಿಶ್ವಾಸಾರ್ಹ"
+    else:
+        label = "Low"
+        kannada_label = "ಕಡಿಮೆ ವಿಶ್ವಾಸಾರ್ಹ"
+
+    return {
+        "score": confidence,
+        "label": label,
+        "kannada_label": kannada_label,
+        "reasons": [
+            f"Top retrieval score: {best_score:.4f}",
+            "Direct answer used" if is_direct_answer else "LLM generation used",
+            f"Context chunks used: {chunk_count}",
+        ],
+    }
+
+
 def answer_from_rag_with_trace(question: str) -> dict:
     trace = []
 
@@ -56,10 +86,7 @@ def answer_from_rag_with_trace(question: str) -> dict:
     })
 
     if not chunks:
-        return {
-            "answer": None,
-            "trace": trace,
-        }
+        return {"answer": None, "trace": trace, "confidence": None}
 
     best_score = chunks[0]["score"]
     best_title = chunks[0]["title"]
@@ -76,26 +103,32 @@ def answer_from_rag_with_trace(question: str) -> dict:
             "status": "failed",
             "details": f"Best score {best_score:.4f} below threshold.",
         })
-        return {
-            "answer": None,
-            "trace": trace,
-        }
+        return {"answer": None, "trace": trace, "confidence": None}
 
     sources_text = build_sources_text(chunks)
+    is_direct = should_use_direct_answer(question)
+    confidence = calculate_confidence(best_score, is_direct, len(chunks))
 
-    if should_use_direct_answer(question):
+    trace.append({
+        "step": "Confidence Engine",
+        "status": confidence["label"].lower(),
+        "details": f'{confidence["score"]}% - {confidence["kannada_label"]}',
+    })
+
+    if is_direct:
         trace.append({
             "step": "Answer Strategy",
             "status": "direct",
             "details": "Direct answer selected. LLM skipped.",
         })
 
-        direct_answer = chunks[0]["chunk_text"]
+        direct_answer = compose_direct_answer(question, chunks[0]["chunk_text"])
 
         return {
             "answer": f"{direct_answer}\n\n{sources_text}",
             "trace": trace,
-        }
+            "confidence": confidence,
+    }
 
     trace.append({
         "step": "Answer Strategy",
@@ -123,6 +156,7 @@ def answer_from_rag_with_trace(question: str) -> dict:
     return {
         "answer": f"{answer}\n\n{sources_text}",
         "trace": trace,
+        "confidence": confidence,
     }
 
 

@@ -17,4 +17,13 @@ def resolve_alias(question: str) -> str | None:
     aliases = load_aliases()
     cleaned_question = question.strip().lower()
 
-    return aliases.get(cleaned_question)
+    exact_match = aliases.get(cleaned_question)
+
+    if exact_match:
+        return exact_match
+
+    for alias, key in aliases.items():
+        if alias in cleaned_question:
+            return key
+
+    return None

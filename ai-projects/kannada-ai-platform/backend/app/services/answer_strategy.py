@@ -13,6 +13,7 @@ DIRECT_ANSWER_KEYWORDS = [
     "who",
     "what",
     "meaning",
+    "ಕೊಡುಗೆ",
 ]
 
 LLM_REASONING_KEYWORDS = [

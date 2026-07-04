@@ -1,4 +1,4 @@
-from app.services.rag_service import answer_from_rag
+from app.llm.router import route_llm
 
 
 FALLBACK_TEXT = "ಉತ್ತರವನ್ನು ಸಿದ್ಧಪಡಿಸಲು ಸ್ವಲ್ಪ ಹೆಚ್ಚು ಸಮಯ ತೆಗೆದುಕೊಳ್ಳುತ್ತಿದೆ"
@@ -140,8 +140,7 @@ def evaluate() -> None:
 
     for test in TEST_CASES:
         question = test["question"]
-        answer = answer_from_rag(question)
-
+        answer = route_llm(question)
         print("\nQuestion:", question)
         print("Answer:", answer)
         print("-" * 80)

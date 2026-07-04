@@ -2,6 +2,7 @@ from app.llm.local_llm import get_llm_response
 from app.services.answer_strategy import should_use_direct_answer
 from app.services.retriever_service import retrieve_chunks
 from app.services.answer_composer import compose_direct_answer
+from app.services.answer_quality_service import clean_final_answer
 
 
 MIN_SIMILARITY_SCORE = 0.70
@@ -123,6 +124,7 @@ def answer_from_rag_with_trace(question: str) -> dict:
         })
 
         direct_answer = compose_direct_answer(question, chunks[0]["chunk_text"])
+        direct_answer = clean_final_answer(direct_answer)
 
         return {
             "answer": f"{direct_answer}\n\n{sources_text}",
@@ -146,6 +148,7 @@ def answer_from_rag_with_trace(question: str) -> dict:
     })
 
     answer = get_llm_response(prompt)
+    answer = clean_final_answer(answer)
 
     trace.append({
         "step": "LLM",

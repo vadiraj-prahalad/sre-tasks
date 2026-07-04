@@ -17,6 +17,7 @@ def ask_question(payload: dict):
         return {
             "question": question,
             "answer": result["answer"],
+            "confidence": result.get("confidence"),
             "trace": [
                 {
                     "step": "POST /ask",

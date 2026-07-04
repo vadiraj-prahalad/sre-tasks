@@ -1,6 +1,21 @@
 from pathlib import Path
 
 
+def clean_markdown(content: str) -> str:
+    lines = []
+
+    for line in content.splitlines():
+        cleaned = line.strip()
+
+        if cleaned.startswith("#"):
+            cleaned = cleaned.lstrip("#").strip()
+
+        if cleaned:
+            lines.append(cleaned)
+
+    return "\n".join(lines)
+
+
 def load_text_file(file_path: str) -> str:
     path = Path(file_path)
 
@@ -16,7 +31,8 @@ def load_text_file(file_path: str) -> str:
 
 
 def load_markdown_file(file_path: str) -> str:
-    return load_text_file(file_path)
+    content = load_text_file(file_path)
+    return clean_markdown(content)
 
 
 def load_document(file_path: str) -> str:

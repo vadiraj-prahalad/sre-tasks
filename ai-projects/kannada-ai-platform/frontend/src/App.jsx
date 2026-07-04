@@ -25,6 +25,7 @@ function App() {
   const [lastQuestion, setLastQuestion] = useState("");
   const [answer, setAnswer] = useState("");
   const [trace, setTrace] = useState([]);
+  const [confidence, setConfidence] = useState(null);
   const [showTrace, setShowTrace] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -39,6 +40,7 @@ function App() {
     setError("");
     setAnswer("");
     setTrace([]);
+    setConfidence(null);
     setShowTrace(false);
     setLastQuestion(question);
 
@@ -46,6 +48,7 @@ function App() {
       const data = await askQuestion(question, true);
       setAnswer(data.answer);
       setTrace(data.trace || []);
+      setConfidence(data.confidence || null);
     } catch (err) {
       setError("Backend ಸಂಪರ್ಕದಲ್ಲಿ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.");
     } finally {
@@ -119,6 +122,20 @@ function App() {
                 <div className="answer-content">
                   <p className="label">ವಿಶ್ವಾಸಾರ್ಹ ಉತ್ತರ</p>
                   <p>{answerText}</p>
+
+                  {confidence && (
+                    <div className="confidence-card">
+                      <div className="confidence-main">
+                        🟢 {confidence.score}% — {confidence.kannada_label}
+                      </div>
+
+                      <div className="confidence-reasons">
+                        {confidence.reasons.map((reason) => (
+                          <div key={reason}>✓ {reason}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {sources.length > 0 && (
                     <div className="sources-card">

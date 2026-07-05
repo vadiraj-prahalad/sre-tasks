@@ -12,20 +12,35 @@ def add_known_source(answer: str) -> str:
     return f"{answer}{KNOWN_SOURCE_TEXT}"
 
 
+def normalize_lookup_text(text: str) -> str:
+    return (
+        text.strip()
+        .lower()
+        .replace("ಡಾ.", "ಡಾ")
+        .replace("್ ", " ")
+        .replace("್", "")
+    )
+
+
 def find_known_answer(question: str) -> str | None:
     facts = load_all_facts()
-    question = question.strip().lower()
+    normalized_question = normalize_lookup_text(question)
 
-    if question in facts:
-        return add_known_source(facts[question])
+    normalized_facts = {
+        normalize_lookup_text(key): value
+        for key, value in facts.items()
+    }
 
-    if "ನಮಸ್ಕಾರ" in question and (
-        "ಅರ್ಥ" in question
-        or "ಎಂದರೇನು" in question
-        or "meaning" in question
-        or "mean" in question
+    if normalized_question in normalized_facts:
+        return add_known_source(normalized_facts[normalized_question])
+
+    if "ನಮಸ್ಕಾರ" in normalized_question and (
+        "ಅರ್ಥ" in normalized_question
+        or "ಎಂದರೇನು" in normalized_question
+        or "meaning" in normalized_question
+        or "mean" in normalized_question
     ):
-        return add_known_source(facts["ನಮಸ್ಕಾರ ಎಂದರೇನು?"])
+        return add_known_source(normalized_facts["ನಮಸ್ಕಾರ ಎಂದರೇನು?"])
 
     return None
 

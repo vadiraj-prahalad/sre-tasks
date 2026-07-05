@@ -2,11 +2,37 @@ import sqlite3
 from pathlib import Path
 
 
-DB_PATH = Path(__file__).resolve().parent.parent / "db" / "knowledge.db"
+APP_DB_PATH = Path(__file__).resolve().parent.parent / "db" / "knowledge.db"
+STANDARDIZED_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "knowledge.db"
 
 
-def load_all_facts() -> dict:
-    connection = sqlite3.connect(DB_PATH)
+def load_standardized_articles() -> dict:
+    if not STANDARDIZED_DB_PATH.exists():
+        return {}
+
+    connection = sqlite3.connect(STANDARDIZED_DB_PATH)
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT question, answer
+        FROM knowledge_articles
+        """
+    )
+
+    rows = cursor.fetchall()
+    connection.close()
+
+    facts = {}
+
+    for question, answer in rows:
+        facts[question.strip().lower()] = answer
+
+    return facts
+
+
+def load_curated_facts() -> dict:
+    connection = sqlite3.connect(APP_DB_PATH)
     cursor = connection.cursor()
 
     cursor.execute(
@@ -22,11 +48,19 @@ def load_all_facts() -> dict:
     facts = {}
 
     for canonical_question, answer in rows:
-        facts[canonical_question] = answer
+        facts[canonical_question.strip().lower()] = answer
 
     return facts
+
+
+def load_all_facts() -> dict:
+    facts = load_curated_facts()
+    facts.update(load_standardized_articles())
+    return facts
+
+
 def add_knowledge_item(item: dict) -> None:
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(APP_DB_PATH)
     cursor = connection.cursor()
 
     cursor.execute(
@@ -71,7 +105,7 @@ def add_knowledge_item(item: dict) -> None:
 
 
 def update_answer(canonical_key: str, answer: str) -> None:
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(APP_DB_PATH)
     cursor = connection.cursor()
 
     cursor.execute(
@@ -87,8 +121,10 @@ def update_answer(canonical_key: str, answer: str) -> None:
 
     connection.commit()
     connection.close()
+
+
 def delete_knowledge_item(canonical_key: str) -> None:
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(APP_DB_PATH)
     cursor = connection.cursor()
 
     cursor.execute(
@@ -102,8 +138,9 @@ def delete_knowledge_item(canonical_key: str) -> None:
     connection.commit()
     connection.close()
 
+
 def search_knowledge_items(search_text: str) -> list[dict]:
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(APP_DB_PATH)
     cursor = connection.cursor()
 
     like_pattern = f"%{search_text}%"
@@ -149,8 +186,10 @@ def search_knowledge_items(search_text: str) -> list[dict]:
         )
 
     return results
+
+
 def find_answer_by_key(canonical_key: str) -> str | None:
-    connection = sqlite3.connect(DB_PATH)
+    connection = sqlite3.connect(APP_DB_PATH)
     cursor = connection.cursor()
 
     cursor.execute(

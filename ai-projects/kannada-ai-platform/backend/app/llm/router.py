@@ -34,6 +34,28 @@ def route_llm_with_trace(prompt: str) -> dict:
         }
     ]
 
+    normalized_question = normalize_question(prompt)
+
+    trace.append({
+        "step": "Query Normalizer",
+        "status": "completed",
+        "details": f"Normalized question: {normalized_question}",
+    })
+
+    known_answer = find_known_answer(normalized_question)
+
+    if known_answer:
+        trace.append({
+            "step": "Known Answer",
+            "status": "matched",
+            "details": "Answer found in trusted known-answer store.",
+        })
+        return build_high_confidence_response(
+            answer=known_answer,
+            trace=trace,
+            reason="Known answer store matched",
+        )
+
     alias_key = resolve_alias(prompt)
 
     if alias_key:
@@ -51,14 +73,6 @@ def route_llm_with_trace(prompt: str) -> dict:
                 reason="Matched curated alias before normalization",
             )
 
-    normalized_question = normalize_question(prompt)
-
-    trace.append({
-        "step": "Query Normalizer",
-        "status": "completed",
-        "details": f"Normalized question: {normalized_question}",
-    })
-
     normalized_alias_key = resolve_alias(normalized_question)
 
     if normalized_alias_key:
@@ -75,20 +89,6 @@ def route_llm_with_trace(prompt: str) -> dict:
                 trace=trace,
                 reason="Matched curated alias after normalization",
             )
-
-    known_answer = find_known_answer(normalized_question)
-
-    if known_answer:
-        trace.append({
-            "step": "Known Answer",
-            "status": "matched",
-            "details": "Answer found in trusted known-answer store.",
-        })
-        return build_high_confidence_response(
-            answer=known_answer,
-            trace=trace,
-            reason="Known answer store matched",
-        )
 
     rag_result = answer_from_rag_with_trace(normalized_question)
     trace.extend(rag_result["trace"])

@@ -4,6 +4,8 @@ from app.db.tools.evaluate_rag import evaluate
 from app.db.tools.generate_chunk_embeddings import generate_chunk_embeddings
 from app.db.tools.ingest_all_sources import ingest_all_sources
 from app.db.tools.list_documents import main as list_documents
+from app.services.knowledge_loader import load_knowledge_to_db
+from scripts.refresh_knowledge import main as refresh_jsonl
 
 
 def print_usage() -> None:
@@ -15,6 +17,20 @@ def print_usage() -> None:
     print("  embed      Generate embeddings for chunks")
     print("  sync       Ingest sources and generate embeddings")
     print("  evaluate   Run RAG evaluation")
+    print("  refresh    Refresh standardized knowledge and load SQLite")
+
+
+def refresh_knowledge() -> None:
+    print("Starting standardized knowledge refresh...")
+
+    refresh_jsonl()
+
+    result = load_knowledge_to_db()
+
+    print("SQLite load completed")
+    print(f"Records loaded: {result['records_loaded']}")
+    print(f"Database: {result['db_path']}")
+    print("Knowledge refresh completed successfully")
 
 
 def main() -> None:
@@ -35,6 +51,8 @@ def main() -> None:
         generate_chunk_embeddings()
     elif command == "evaluate":
         evaluate()
+    elif command == "refresh":
+        refresh_knowledge()
     else:
         print(f"Unknown command: {command}")
         print_usage()

@@ -1,4 +1,5 @@
 import sys
+import time
 
 from app.db.tools.evaluate_rag import evaluate
 from app.db.tools.generate_chunk_embeddings import generate_chunk_embeddings
@@ -17,20 +18,51 @@ def print_usage() -> None:
     print("  embed      Generate embeddings for chunks")
     print("  sync       Ingest sources and generate embeddings")
     print("  evaluate   Run RAG evaluation")
-    print("  refresh    Refresh standardized knowledge and load SQLite")
+    print("  refresh    Refresh knowledge, reload SQLite, embed, and evaluate")
 
 
 def refresh_knowledge() -> None:
-    print("Starting standardized knowledge refresh...")
+    start_time = time.time()
 
+    print("Starting full knowledge refresh...")
+    print("")
+
+    print("Step 1/4: Standardizing raw knowledge...")
     refresh_jsonl()
+    print("")
 
-    result = load_knowledge_to_db()
+    print("Step 2/4: Loading standardized knowledge into SQLite...")
+    load_result = load_knowledge_to_db()
+    print(f"Records loaded: {load_result['records_loaded']}")
+    print(f"Database: {load_result['db_path']}")
+    print("")
 
-    print("SQLite load completed")
-    print(f"Records loaded: {result['records_loaded']}")
-    print(f"Database: {result['db_path']}")
-    print("Knowledge refresh completed successfully")
+    print("Step 3/4: Generating embeddings...")
+    generate_chunk_embeddings()
+    print("")
+
+    print("Step 4/4: Running evaluation...")
+    evaluation_result = evaluate()
+    print("")
+
+    duration = round(time.time() - start_time, 2)
+
+    print("Refresh Summary")
+    print("---------------")
+    print(f"Records loaded : {load_result['records_loaded']}")
+    print("Embeddings     : Generated")
+    print(
+        f"Evaluation     : {evaluation_result['passed']} passed, "
+        f"{evaluation_result['failed']} failed"
+    )
+    print(f"Duration       : {duration} seconds")
+    print("")
+
+    if evaluation_result["success"]:
+        print("Full knowledge refresh completed successfully")
+    else:
+        print("Refresh completed with evaluation failures")
+        raise SystemExit(1)
 
 
 def main() -> None:
@@ -50,7 +82,9 @@ def main() -> None:
         ingest_all_sources()
         generate_chunk_embeddings()
     elif command == "evaluate":
-        evaluate()
+        result = evaluate()
+        if not result["success"]:
+            raise SystemExit(1)
     elif command == "refresh":
         refresh_knowledge()
     else:

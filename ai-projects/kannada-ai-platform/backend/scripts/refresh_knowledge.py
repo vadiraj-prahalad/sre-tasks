@@ -4,15 +4,16 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 
-RAW_DIR = Path("backend/knowledge/raw")
-OUTPUT_FILE = Path("backend/knowledge/processed/knowledge_base.jsonl")
+BACKEND_DIR = Path(__file__).resolve().parents[1]
 
+RAW_DIR = BACKEND_DIR / "knowledge" / "raw"
+OUTPUT_FILE = BACKEND_DIR / "knowledge" / "processed" / "knowledge_base.jsonl"
 
 REQUIRED_FIELDS = ["question", "answer", "category", "source"]
 
 
 def normalize_text(text: str) -> str:
-    return " ".join(text.strip().split())
+    return " ".join(str(text).strip().split())
 
 
 def generate_id(question: str, answer: str) -> str:
@@ -41,13 +42,16 @@ def validate_record(record: dict, filename: str, index: int) -> dict:
         "answer": answer,
         "category": normalize_text(record["category"]),
         "source": normalize_text(record["source"]),
-        "language": record.get("language", "kn"),
+        "language": normalize_text(record.get("language", "kn")),
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
 def load_raw_files() -> list[dict]:
     records = []
+
+    if not RAW_DIR.exists():
+        raise FileNotFoundError(f"Raw knowledge directory not found: {RAW_DIR}")
 
     for file_path in sorted(RAW_DIR.glob("*.json")):
         with file_path.open("r", encoding="utf-8") as file:

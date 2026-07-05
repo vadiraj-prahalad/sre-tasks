@@ -7,6 +7,7 @@ from app.db.tools.ingest_all_sources import ingest_all_sources
 from app.db.tools.list_documents import main as list_documents
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
+from app.db.tools.sync_standardized_articles import sync_standardized_articles
 
 
 def print_usage() -> None:
@@ -27,21 +28,27 @@ def refresh_knowledge() -> None:
     print("Starting full knowledge refresh...")
     print("")
 
-    print("Step 1/4: Standardizing raw knowledge...")
+    print("Step 1/5" \
+    ": Standardizing raw knowledge...")
     refresh_jsonl()
     print("")
 
-    print("Step 2/4: Loading standardized knowledge into SQLite...")
+    print("Step 2/5: Loading standardized knowledge into SQLite...")
     load_result = load_knowledge_to_db()
     print(f"Records loaded: {load_result['records_loaded']}")
     print(f"Database: {load_result['db_path']}")
     print("")
 
-    print("Step 3/4: Generating embeddings...")
+    print("Step 3/5: Syncing standardized articles into RAG documents...")
+    sync_result = sync_standardized_articles()
+    print(f"Articles synced: {sync_result['articles_synced']}")
+    print("")
+
+    print("Step 4/5: Generating embeddings...")
     generate_chunk_embeddings()
     print("")
 
-    print("Step 4/4: Running evaluation...")
+    print("Step 5/5: Running evaluation...")
     evaluation_result = evaluate()
     print("")
 

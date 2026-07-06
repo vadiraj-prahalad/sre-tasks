@@ -130,3 +130,42 @@ def list_draft_answers() -> list[dict[str, Any]]:
         }
         for row in rows
     ]
+def delete_draft_answer(draft_id: int) -> dict[str, Any]:
+    create_draft_table()
+
+    connection = connect_db()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT id
+        FROM draft_knowledge
+        WHERE id = ?
+        """,
+        (draft_id,),
+    )
+
+    existing = cursor.fetchone()
+
+    if not existing:
+        connection.close()
+        return {
+            "status": "not_found",
+            "draft_id": draft_id,
+        }
+
+    cursor.execute(
+        """
+        DELETE FROM draft_knowledge
+        WHERE id = ?
+        """,
+        (draft_id,),
+    )
+
+    connection.commit()
+    connection.close()
+
+    return {
+        "status": "deleted",
+        "draft_id": draft_id,
+    }

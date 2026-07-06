@@ -9,6 +9,10 @@ from app.db.tools.sync_standardized_articles import sync_standardized_articles
 from app.services.draft_knowledge_service import list_draft_answers
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
+from app.services.draft_knowledge_service import (
+    delete_draft_answer,
+    list_draft_answers,
+)
 
 
 def print_usage() -> None:
@@ -118,6 +122,19 @@ def main() -> None:
         refresh_knowledge()
     elif command == "drafts":
         show_drafts()
+    elif command == "delete-draft":
+        if len(sys.argv) < 3:
+            print("Usage: python manage.py delete-draft <id>")
+            raise SystemExit(1)
+
+        draft_id = int(sys.argv[2])
+        result = delete_draft_answer(draft_id)
+
+        if result["status"] == "deleted":
+            print(f"Deleted draft ID: {draft_id}")
+        else:
+            print(f"Draft not found: {draft_id}")
+            raise SystemExit(1)    
     else:
         print(f"Unknown command: {command}")
         print_usage()

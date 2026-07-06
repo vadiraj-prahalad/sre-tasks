@@ -5,9 +5,10 @@ from app.db.tools.evaluate_rag import evaluate
 from app.db.tools.generate_chunk_embeddings import generate_chunk_embeddings
 from app.db.tools.ingest_all_sources import ingest_all_sources
 from app.db.tools.list_documents import main as list_documents
+from app.db.tools.sync_standardized_articles import sync_standardized_articles
+from app.services.draft_knowledge_service import list_draft_answers
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
-from app.db.tools.sync_standardized_articles import sync_standardized_articles
 
 
 def print_usage() -> None:
@@ -20,6 +21,28 @@ def print_usage() -> None:
     print("  sync       Ingest sources and generate embeddings")
     print("  evaluate   Run RAG evaluation")
     print("  refresh    Refresh knowledge, reload SQLite, embed, and evaluate")
+    print("  drafts     Show draft knowledge captured from Ollama fallback")
+
+
+def show_drafts() -> None:
+    drafts = list_draft_answers()
+
+    if not drafts:
+        print("No draft knowledge found.")
+        return
+
+    print("Draft Knowledge Review Queue")
+    print("=" * 80)
+
+    for draft in drafts:
+        print(f"ID        : {draft['id']}")
+        print(f"Question  : {draft['question']}")
+        print(f"Status    : {draft['status']}")
+        print(f"Hit Count : {draft['hit_count']}")
+        print(f"Updated   : {draft['updated_at']}")
+        print("Answer:")
+        print(draft["answer"])
+        print("-" * 80)
 
 
 def refresh_knowledge() -> None:
@@ -28,8 +51,7 @@ def refresh_knowledge() -> None:
     print("Starting full knowledge refresh...")
     print("")
 
-    print("Step 1/5" \
-    ": Standardizing raw knowledge...")
+    print("Step 1/5: Standardizing raw knowledge...")
     refresh_jsonl()
     print("")
 
@@ -94,6 +116,8 @@ def main() -> None:
             raise SystemExit(1)
     elif command == "refresh":
         refresh_knowledge()
+    elif command == "drafts":
+        show_drafts()
     else:
         print(f"Unknown command: {command}")
         print_usage()

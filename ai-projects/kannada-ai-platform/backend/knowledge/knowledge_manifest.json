@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "language": "kn",
+  "sources": [
+    {
+      "file": "raw/literature.json",
+      "enabled": true,
+      "domain": "literature"
+    },
+    {
+      "file": "raw/cinema.json",
+      "enabled": true,
+      "domain": "cinema"
+    },
+    {
+      "file": "raw/language.json",
+      "enabled": true,
+      "domain": "language"
+    }
+  ]
+}

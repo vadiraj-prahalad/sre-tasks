@@ -3,6 +3,7 @@ from app.services.alias_service import resolve_alias
 from app.services.knowledge_service import find_known_answer, find_known_answer_by_key
 from app.services.query_normalizer import normalize_question
 from app.services.rag_service import answer_from_rag_with_trace
+from app.services.draft_knowledge_service import save_draft_answer
 
 
 FALLBACK_ANSWER = "ಈ ವಿಷಯದ ಉತ್ತರವನ್ನು ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
@@ -166,6 +167,16 @@ def route_llm_with_trace(prompt: str) -> dict:
         "step": "General AI",
         "status": "completed",
         "details": "Ollama fallback answer generated.",
+    })
+    draft_result = save_draft_answer(normalized_question, fallback_answer)
+
+    trace.append({
+        "step": "Draft Knowledge",
+        "status": draft_result["status"],
+        "details": (
+            f"Draft ID: {draft_result['draft_id']} | "
+            f"Hit count: {draft_result['hit_count']}"
+        ),
     })
 
     answer = (

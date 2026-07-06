@@ -48,7 +48,7 @@ def find_known_answer(question: str) -> str | None:
 def find_known_answer_by_key(canonical_key: str) -> str | None:
     answer = find_answer_by_key(canonical_key)
 
-    if not answer:
-        return None
+    if answer:
+        return add_known_source(answer)
 
-    return add_known_source(answer)
+    return find_known_answer(canonical_key)

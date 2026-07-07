@@ -6,7 +6,14 @@ const suggestedQuestions = [
   { label: "🎭 ಯಕ್ಷಗಾನ", question: "ಯಕ್ಷಗಾನ ಎಂದರೇನು?" },
   { label: "🎵 ಪುರಂದರ ದಾಸರು", question: "ಪುರಂದರ ದಾಸರು ಯಾರು?" },
   { label: "📖 ಕುವೆಂಪು", question: "ಕುವೆಂಪು ಯಾರು?" },
-  { label: "🕉 ಮಧ್ವಾಚಾರ್ಯರು", question: "ಮಧ್ವಾಚಾರ್ಯರು ಯಾರು?" },
+  { label: "📝 ಕನ್ನಡ ವ್ಯಾಕರಣ", question: "ಕನ್ನಡ ವ್ಯಾಕರಣ ಎಂದರೇನು?" },
+];
+
+const relatedQuestions = [
+  { label: "📚 ಕನ್ನಡ ಸಾಹಿತ್ಯ", question: "ಕನ್ನಡ ಸಾಹಿತ್ಯ ಎಂದರೇನು?" },
+  { label: "📝 ನಾಮಪದ", question: "ನಾಮಪದ ಎಂದರೇನು?" },
+  { label: "🏛 ಹಂಪಿ", question: "ಹಂಪಿ ಎಂದರೇನು?" },
+  { label: "🎉 ಉಗಾದಿ", question: "ಉಗಾದಿ ಎಂದರೇನು?" },
 ];
 
 function splitAnswerAndSources(rawAnswer) {
@@ -27,6 +34,46 @@ function splitAnswerAndSources(rawAnswer) {
   return { answerText, sources };
 }
 
+function getTrustBadge(confidence) {
+  if (!confidence) {
+    return {
+      icon: "⚪",
+      title: "Unknown",
+      subtitle: "No confidence data available",
+      className: "trust-neutral",
+      scoreText: "ವಿಶ್ವಾಸಾರ್ಹತೆ ಲಭ್ಯವಿಲ್ಲ",
+    };
+  }
+
+  if (confidence.score >= 90) {
+    return {
+      icon: "🟢",
+      title: "Trusted Answer",
+      subtitle: "Verified knowledge source",
+      className: "trust-high",
+      scoreText: `${confidence.score}% · ${confidence.kannada_label}`,
+    };
+  }
+
+  if (confidence.score >= 50) {
+    return {
+      icon: "🟡",
+      title: "AI Generated",
+      subtitle: "Needs human verification",
+      className: "trust-medium",
+      scoreText: `${confidence.score}% · ${confidence.kannada_label}`,
+    };
+  }
+
+  return {
+    icon: "🟠",
+    title: "Limited Information",
+    subtitle: "Low confidence answer",
+    className: "trust-low",
+    scoreText: `${confidence.score}% · ${confidence.kannada_label}`,
+  };
+}
+
 function App() {
   const [question, setQuestion] = useState("");
   const [lastQuestion, setLastQuestion] = useState("");
@@ -34,6 +81,7 @@ function App() {
   const [trace, setTrace] = useState([]);
   const [confidence, setConfidence] = useState(null);
   const [showTrace, setShowTrace] = useState(false);
+  const [developerMode, setDeveloperMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -65,12 +113,26 @@ function App() {
   }
 
   const { answerText, sources } = splitAnswerAndSources(answer);
+  const trustBadge = getTrustBadge(confidence);
+  const isTrustedAnswer = confidence?.score >= 90;
 
   return (
     <main className="app">
       <section className="shell">
         <header className="hero">
-          <div className="badge">Kannada AI Beta</div>
+          <div className="top-row">
+            <div className="badge">Kannada AI Beta</div>
+
+            <label className="dev-toggle">
+              <input
+                type="checkbox"
+                checked={developerMode}
+                onChange={(event) => setDeveloperMode(event.target.checked)}
+              />
+              Developer Mode
+            </label>
+          </div>
+
           <h1>ಕನ್ನಡ ಜ್ಞಾನ ಸಹಾಯಕ</h1>
           <p>ಕನ್ನಡ ಸಂಸ್ಕೃತಿ, ಸಾಹಿತ್ಯ, ಇತಿಹಾಸ ಮತ್ತು ಜ್ಞಾನಕ್ಕಾಗಿ ಸರಳ AI ಸಹಾಯಕ</p>
         </header>
@@ -79,7 +141,7 @@ function App() {
           <textarea
             value={question}
             onChange={(event) => setQuestion(event.target.value)}
-            placeholder="ಉದಾ: ಯಕ್ಷಗಾನ ಎಂದರೇನು?"
+            placeholder="ಉದಾ: ಕನ್ನಡ ವ್ಯಾಕರಣ ಎಂದರೇನು?"
             rows="3"
           />
 
@@ -116,11 +178,8 @@ function App() {
             {loading && (
               <div className="answer-card">
                 <div className="answer-header">
-                  <span className="bot-icon">🤖</span>
-                  <div>
-                    <h2>ಉತ್ತರ ಸಿದ್ಧಪಡಿಸುತ್ತಿದೆ</h2>
-                    <p>ಜ್ಞಾನ ಮೂಲಗಳು ಮತ್ತು RAG pipeline ಪರಿಶೀಲಿಸುತ್ತಿದೆ...</p>
-                  </div>
+                  <h2>ಉತ್ತರ ಸಿದ್ಧಪಡಿಸುತ್ತಿದೆ</h2>
+                  <p>ಜ್ಞಾನ ಮೂಲಗಳನ್ನು ಪರಿಶೀಲಿಸುತ್ತಿದೆ...</p>
                 </div>
               </div>
             )}
@@ -128,22 +187,21 @@ function App() {
             {answer && !loading && (
               <div className="answer-card">
                 <div className="answer-header">
-                  <span className="bot-icon">🤖</span>
-                  <div>
-                    <h2>ವಿಶ್ವಾಸಾರ್ಹ ಉತ್ತರ</h2>
-                    {confidence && (
-                      <p className="confidence-line">
-                        {confidence.score}% · {confidence.kannada_label}
-                      </p>
-                    )}
-                  </div>
+                  <h2>ಉತ್ತರ</h2>
                 </div>
 
                 <p className="answer-text">{answerText}</p>
 
+                <div className={`trust-card ${trustBadge.className}`}>
+                  <div className="trust-icon">{trustBadge.icon}</div>
+                  <h3>{trustBadge.title}</h3>
+                  <p>{trustBadge.subtitle}</p>
+                  <span className="trust-score">{trustBadge.scoreText}</span>
+                </div>
+
                 {sources.length > 0 && (
                   <div className="sources-row">
-                    <span className="section-label">ಮೂಲಗಳು</span>
+                    <span className="section-label">📚 ಮೂಲಗಳು</span>
                     <div className="source-list">
                       {sources.map((source) => (
                         <span className="source-chip" key={source}>
@@ -155,14 +213,53 @@ function App() {
                 )}
 
                 {confidence?.reasons?.length > 0 && (
-                  <div className="confidence-box">
-                    {confidence.reasons.map((reason) => (
-                      <span key={reason}>✓ {reason}</span>
-                    ))}
+                  <div className="insight-card">
+                    <span className="section-label">
+                      {isTrustedAnswer
+                        ? "💡 ಈ ಉತ್ತರವನ್ನು ಏಕೆ ನಂಬಬಹುದು?"
+                        : "⚠️ AI ಉತ್ತರ — ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ"}
+                    </span>
+
+                    <div className="insight-list">
+                      {isTrustedAnswer ? (
+                        confidence.reasons.map((reason) => (
+                          <div key={reason}>✓ {reason}</div>
+                        ))
+                      ) : (
+                        <>
+                          <div>✓ ಪರಿಶೀಲಿತ ಮೂಲ ಸಿಗಲಿಲ್ಲ</div>
+                          <div>✓ ಸಾಮಾನ್ಯ AI ಉತ್ತರ ಬಳಸಲಾಗಿದೆ</div>
+                          <div>✓ ತಪ್ಪುಗಳಿರಬಹುದು, ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ</div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {trace.length > 0 && (
+                <div className="related-card">
+                  <span className="section-label">🔍 ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ</span>
+                  <div className="related-list">
+                    {relatedQuestions.map((item) => (
+                      <button
+                        key={item.question}
+                        onClick={() => handleAsk(item.question)}
+                        disabled={loading}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="feedback-card">
+                  <span>ಈ ಉತ್ತರ ಉಪಯುಕ್ತವಾಗಿತ್ತೇ?</span>
+                  <div>
+                    <button type="button">👍 ಹೌದು</button>
+                    <button type="button">👎 ಸುಧಾರಣೆ ಬೇಕು</button>
+                  </div>
+                </div>
+
+                {developerMode && trace.length > 0 && (
                   <div className="trace-section">
                     <button
                       className="trace-toggle"

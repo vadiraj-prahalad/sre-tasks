@@ -13,7 +13,15 @@
 
 .hero {
   text-align: center;
-  margin: 28px 0 22px;
+  margin: 20px 0 18px;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .badge {
@@ -23,37 +31,49 @@
   padding: 8px 16px;
   border-radius: 999px;
   font-weight: 800;
-  margin-bottom: 12px;
+}
+
+.dev-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: white;
+  border: 1px solid #e2dcff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #4b3b8f;
 }
 
 .hero h1 {
-  font-size: 42px;
+  font-size: 38px;
   line-height: 1.15;
   margin: 0;
-  letter-spacing: -0.5px;
 }
 
 .hero p {
-  margin: 10px auto 0;
+  margin: 8px auto 0;
   max-width: 680px;
   color: #5b5b68;
-  font-size: 18px;
-  line-height: 1.6;
+  font-size: 17px;
+  line-height: 1.5;
 }
 
-.ask-card {
+.ask-card,
+.chat-panel {
   background: white;
   border: 1px solid #e2dcff;
-  border-radius: 28px;
-  padding: 22px;
-  box-shadow: 0 18px 45px rgba(60, 40, 130, 0.12);
+  border-radius: 26px;
+  padding: 20px;
+  box-shadow: 0 18px 45px rgba(60, 40, 130, 0.1);
 }
 
 textarea {
   width: 100%;
   border: 1px solid #d7cff8;
   border-radius: 20px;
-  font-size: 20px;
+  font-size: 19px;
   line-height: 1.7;
   padding: 18px;
   resize: vertical;
@@ -69,7 +89,7 @@ textarea:focus {
 .ask-actions {
   display: flex;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 button {
@@ -102,10 +122,11 @@ button:disabled {
   flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
-  margin: 18px 0 24px;
+  margin: 16px 0 22px;
 }
 
-.suggestions button {
+.suggestions button,
+.related-list button {
   background: white;
   color: #4d2fc2;
   border: 1px solid #d7cff8;
@@ -125,11 +146,7 @@ button:disabled {
 }
 
 .chat-panel {
-  background: white;
-  border: 1px solid #e2dcff;
-  border-radius: 28px;
-  padding: 22px;
-  box-shadow: 0 18px 45px rgba(60, 40, 130, 0.1);
+  margin-top: 18px;
 }
 
 .question-card {
@@ -137,13 +154,14 @@ button:disabled {
   border-radius: 20px;
   padding: 16px 18px;
   margin-bottom: 16px;
+  text-align: center;
 }
 
 .question-card span,
 .section-label {
   color: #5b35d5;
   font-weight: 900;
-  font-size: 14px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -157,59 +175,112 @@ button:disabled {
 .answer-card {
   background: #f8fbff;
   border-radius: 22px;
-  padding: 20px;
+  padding: 22px;
 }
 
 .answer-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.bot-icon {
-  background: white;
-  border: 1px solid #e2dcff;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  font-size: 23px;
+  text-align: center;
+  margin-bottom: 18px;
 }
 
 .answer-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 26px;
+  font-weight: 800;
+  color: #2b225a;
 }
 
-.confidence-line {
-  margin: 4px 0 0;
-  color: #15803d;
-  font-weight: 800;
+.answer-header p {
+  margin: 8px 0 0;
+  color: #5b5b68;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .answer-text {
   font-size: 19px;
   line-height: 1.9;
   color: #30303a;
-  margin: 0;
+  margin: 0 0 18px;
   white-space: pre-wrap;
+  text-align: center;
 }
 
-.sources-row {
-  margin-top: 20px;
+.trust-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin: 14px 0 16px;
+  border: 1px solid;
+}
+
+.trust-icon {
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.trust-card h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.trust-card p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.trust-score {
+  display: inline-block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.trust-high {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.trust-medium {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.trust-low,
+.trust-neutral {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #9a3412;
+}
+
+.sources-row,
+.insight-card,
+.related-card,
+.feedback-card {
+  margin-top: 18px;
   background: white;
   border: 1px solid #e2dcff;
   border-radius: 18px;
   padding: 14px;
+  text-align: center;
 }
 
-.source-list {
+.source-list,
+.related-list {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 10px;
+  justify-content: center;
 }
 
 .source-chip {
@@ -221,27 +292,43 @@ button:disabled {
   font-size: 14px;
 }
 
-.confidence-box {
-  margin-top: 14px;
-  display: flex;
-  flex-wrap: wrap;
+.insight-list {
+  margin-top: 10px;
+  display: grid;
   gap: 8px;
+  color: #245c38;
+  font-weight: 700;
+  font-size: 14px;
 }
 
-.confidence-box span {
-  background: #ecfdf3;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+.feedback-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  color: #4b3b8f;
+  font-weight: 900;
+}
+
+.feedback-card div {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.feedback-card button {
+  background: #f4f0ff;
+  color: #4d2fc2;
+  border: 1px solid #d7cff8;
   border-radius: 999px;
-  padding: 8px 11px;
-  font-size: 13px;
-  font-weight: 700;
+  padding: 9px 12px;
 }
 
 .trace-section {
   margin-top: 18px;
   border-top: 1px solid #e2dcff;
   padding-top: 14px;
+  text-align: center;
 }
 
 .trace-toggle {
@@ -263,6 +350,7 @@ button:disabled {
   border: 1px solid #ddd2ff;
   border-radius: 14px;
   padding: 12px;
+  text-align: left;
 }
 
 .trace-item strong {
@@ -291,12 +379,18 @@ button:disabled {
     padding: 14px;
   }
 
+  .top-row,
+  .feedback-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
   .hero {
-    margin-top: 12px;
+    margin-top: 10px;
   }
 
   .hero h1 {
-    font-size: 31px;
+    font-size: 30px;
   }
 
   .hero p {
@@ -309,10 +403,7 @@ button:disabled {
     padding: 16px;
   }
 
-  textarea {
-    font-size: 17px;
-  }
-
+  textarea,
   .answer-text {
     font-size: 17px;
   }

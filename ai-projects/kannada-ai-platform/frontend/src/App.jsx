@@ -208,6 +208,23 @@ function App() {
                   </div>
                 )}
 
+                {relatedTopics.length > 0 && (
+                  <div className="related-card">
+                    <span className="section-label">🔍 ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ</span>
+                    <div className="related-list">
+                      {relatedTopics.map((topic) => (
+                        <button
+                          key={topic}
+                          onClick={() => handleAsk(topic)}
+                          disabled={loading}
+                        >
+                          {topic}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {confidence?.reasons?.length > 0 && (
                   <div className="insight-card">
                     <span className="section-label">
@@ -228,23 +245,6 @@ function App() {
                           <div>✓ ತಪ್ಪುಗಳಿರಬಹುದು, ದಯವಿಟ್ಟು ಪರಿಶೀಲಿಸಿ</div>
                         </>
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {relatedTopics.length > 0 && (
-                  <div className="related-card">
-                    <span className="section-label">🔍 ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ</span>
-                    <div className="related-list">
-                      {relatedTopics.map((topic) => (
-                        <button
-                          key={topic}
-                          onClick={() => handleAsk(topic)}
-                          disabled={loading}
-                        >
-                          {topic}
-                        </button>
-                      ))}
                     </div>
                   </div>
                 )}

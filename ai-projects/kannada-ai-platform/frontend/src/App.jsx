@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { askQuestion, submitFeedback } from "./services/api";
+import {
+  askQuestion,
+  createAdminKnowledge,
+  listAdminKnowledge,
+  submitFeedback,
+} from "./services/api";
 import "./App.css";
 
 const suggestedQuestions = [
@@ -81,6 +86,7 @@ function getTrustBadge(confidence) {
 
 function App() {
   const [conversationId] = useState(getConversationId);
+
   const [question, setQuestion] = useState("");
   const [lastQuestion, setLastQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -89,10 +95,19 @@ function App() {
   const [relatedTopics, setRelatedTopics] = useState([]);
   const [showTrace, setShowTrace] = useState(false);
   const [developerMode, setDeveloperMode] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState("");
   const [memoryInfo, setMemoryInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const [adminArticles, setAdminArticles] = useState([]);
+  const [adminStatus, setAdminStatus] = useState("");
+  const [adminForm, setAdminForm] = useState({
+    question: "",
+    answer: "",
+    category: "general",
+  });
 
   const { answerText, sources } = splitAnswerAndSources(answer);
   const trustBadge = getTrustBadge(confidence);
@@ -150,6 +165,40 @@ function App() {
     }
   }
 
+  async function loadAdminArticles() {
+    try {
+      const data = await listAdminKnowledge();
+      setAdminArticles(data.articles || []);
+      setAdminStatus("");
+    } catch {
+      setAdminStatus("Admin knowledge load failed.");
+    }
+  }
+
+  async function handleAdminSubmit(event) {
+    event.preventDefault();
+
+    if (!adminForm.question.trim() || !adminForm.answer.trim()) {
+      setAdminStatus("Question and answer are required.");
+      return;
+    }
+
+    try {
+      const result = await createAdminKnowledge(adminForm);
+
+      setAdminStatus(`Article saved. Total admin articles: ${result.total_articles}`);
+      setAdminForm({
+        question: "",
+        answer: "",
+        category: "general",
+      });
+
+      await loadAdminArticles();
+    } catch {
+      setAdminStatus("Failed to save admin article.");
+    }
+  }
+
   return (
     <main className="app">
       <section className="shell">
@@ -164,6 +213,21 @@ function App() {
                 onChange={(event) => setDeveloperMode(event.target.checked)}
               />
               Developer Mode
+            </label>
+
+            <label className="dev-toggle">
+              <input
+                type="checkbox"
+                checked={adminMode}
+                onChange={(event) => {
+                  setAdminMode(event.target.checked);
+
+                  if (event.target.checked) {
+                    loadAdminArticles();
+                  }
+                }}
+              />
+              Admin Mode
             </label>
           </div>
 
@@ -197,6 +261,73 @@ function App() {
             </button>
           ))}
         </section>
+
+        {adminMode && (
+          <section className="admin-card">
+            <div className="admin-header">
+              <h2>Admin Knowledge CMS</h2>
+              <p>Add verified knowledge without editing JSON manually.</p>
+            </div>
+
+            <form className="admin-form" onSubmit={handleAdminSubmit}>
+              <input
+                value={adminForm.question}
+                onChange={(event) =>
+                  setAdminForm({
+                    ...adminForm,
+                    question: event.target.value,
+                  })
+                }
+                placeholder="Question / ಪ್ರಶ್ನೆ"
+              />
+
+              <textarea
+                value={adminForm.answer}
+                onChange={(event) =>
+                  setAdminForm({
+                    ...adminForm,
+                    answer: event.target.value,
+                  })
+                }
+                placeholder="Verified answer / ಪರಿಶೀಲಿತ ಉತ್ತರ"
+                rows="4"
+              />
+
+              <input
+                value={adminForm.category}
+                onChange={(event) =>
+                  setAdminForm({
+                    ...adminForm,
+                    category: event.target.value,
+                  })
+                }
+                placeholder="Category"
+              />
+
+              <button className="primary-button" type="submit">
+                Save Knowledge
+              </button>
+            </form>
+
+            {adminStatus && <p className="admin-status">{adminStatus}</p>}
+
+            <div className="admin-list">
+              <h3>Admin Articles</h3>
+
+              {adminArticles.length === 0 && <p>No admin articles yet.</p>}
+
+              {adminArticles.map((article, index) => (
+                <div className="admin-article" key={`${article.question}-${index}`}>
+                  <strong>
+                    {index + 1}. {article.question}
+                  </strong>
+                  <p>{article.answer}</p>
+                  <span>{article.category}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {error && <div className="error">{error}</div>}
 
@@ -321,7 +452,9 @@ function App() {
                       <div className="trace-list">
                         {trace.map((item, index) => (
                           <div className="trace-item" key={`${item.step}-${index}`}>
-                            <strong>{index + 1}. {item.step}</strong>
+                            <strong>
+                              {index + 1}. {item.step}
+                            </strong>
                             <span>{item.status}</span>
                             <p>{item.details}</p>
                           </div>

@@ -5,5 +5,12 @@
     "category": "test",
     "source": "admin_cms",
     "language": "kn"
+  },
+  {
+    "question": "ಕನ್ನಡ ಭಾಷೆ",
+    "answer": "ಕನ್ನಡವು ಭಾರತದ ಕರ್ನಾಟಕ ರಾಜ್ಯದ ಮುಖ್ಯ ಮತ್ತು ಅಧಿಕೃತ ಭಾಷೆಯಾಗಿದೆ.ಕನ್ನಡಕ್ಕೆ ಭಾರತ ಸರ್ಕಾರವು \"ಶಾಸ್ತ್ರೀಯ ಭಾಷೆ\" (Classical Language) ಎಂಬ ಹೆಮ್ಮೆಯ ಸ್ಥಾನಮಾನವನ್ನು ನೀಡಿದೆ",
+    "category": "language",
+    "source": "admin_cms",
+    "language": "kn"
   }
 ]

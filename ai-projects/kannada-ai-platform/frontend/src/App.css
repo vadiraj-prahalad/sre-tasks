@@ -408,3 +408,11 @@ button:disabled {
     font-size: 17px;
   }
 }
+.feedback-status {
+  width: 100%;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 700;
+  text-align: center;
+}

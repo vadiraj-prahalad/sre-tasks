@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { askQuestion } from "./services/api";
+import { askQuestion, submitFeedback } from "./services/api";
 import "./App.css";
 
 const suggestedQuestions = [
@@ -76,8 +76,13 @@ function App() {
   const [relatedTopics, setRelatedTopics] = useState([]);
   const [showTrace, setShowTrace] = useState(false);
   const [developerMode, setDeveloperMode] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const { answerText, sources } = splitAnswerAndSources(answer);
+  const trustBadge = getTrustBadge(confidence);
+  const isTrustedAnswer = confidence?.score >= 90;
 
   async function handleAsk(selectedQuestion = question) {
     if (!selectedQuestion.trim()) {
@@ -92,6 +97,7 @@ function App() {
     setConfidence(null);
     setRelatedTopics([]);
     setShowTrace(false);
+    setFeedbackStatus("");
     setLastQuestion(selectedQuestion);
     setQuestion(selectedQuestion);
 
@@ -108,9 +114,25 @@ function App() {
     }
   }
 
-  const { answerText, sources } = splitAnswerAndSources(answer);
-  const trustBadge = getTrustBadge(confidence);
-  const isTrustedAnswer = confidence?.score >= 90;
+  async function handleFeedback(rating) {
+    try {
+      await submitFeedback({
+        question: lastQuestion,
+        answer: answerText,
+        rating,
+        confidence_score: confidence?.score ?? null,
+        source: sources[0] || null,
+      });
+
+      setFeedbackStatus(
+        rating === "positive"
+          ? "ಧನ್ಯವಾದಗಳು! ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ ಉಳಿಸಲಾಗಿದೆ."
+          : "ಧನ್ಯವಾದಗಳು. ಈ ಉತ್ತರವನ್ನು ಸುಧಾರಣೆಗೆ ಗುರುತಿಸಲಾಗಿದೆ."
+      );
+    } catch {
+      setFeedbackStatus("ಪ್ರತಿಕ್ರಿಯೆ ಉಳಿಸಲು ಸಮಸ್ಯೆ ಆಯಿತು.");
+    }
+  }
 
   return (
     <main className="app">
@@ -252,9 +274,14 @@ function App() {
                 <div className="feedback-card">
                   <span>ಈ ಉತ್ತರ ಉಪಯುಕ್ತವಾಗಿತ್ತೇ?</span>
                   <div>
-                    <button type="button">👍 ಹೌದು</button>
-                    <button type="button">👎 ಸುಧಾರಣೆ ಬೇಕು</button>
+                    <button type="button" onClick={() => handleFeedback("positive")}>
+                      👍 ಹೌದು
+                    </button>
+                    <button type="button" onClick={() => handleFeedback("negative")}>
+                      👎 ಸುಧಾರಣೆ ಬೇಕು
+                    </button>
                   </div>
+                  {feedbackStatus && <p className="feedback-status">{feedbackStatus}</p>}
                 </div>
 
                 {developerMode && trace.length > 0 && (

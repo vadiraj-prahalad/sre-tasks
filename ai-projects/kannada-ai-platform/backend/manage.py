@@ -13,6 +13,7 @@ from app.services.draft_knowledge_service import (
 )
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
+from app.services.feedback_dashboard_service import get_feedback_dashboard
 
 
 def print_usage() -> None:
@@ -166,10 +167,42 @@ def main() -> None:
         delete_draft_command()
     elif command == "approve-draft":
         approve_draft_command()
+    elif command == "feedback":
+        show_feedback_dashboard()
     else:
         print(f"Unknown command: {command}")
         print_usage()
 
+def show_feedback_dashboard() -> None:
+    dashboard = get_feedback_dashboard()
+    stats = dashboard["stats"]
+    feedback = dashboard["feedback"]
+
+    print("Feedback Dashboard")
+    print("=" * 80)
+    print(f"👍 Positive : {stats['positive']}")
+    print(f"👎 Negative : {stats['negative']}")
+    print("")
+
+    if not feedback:
+        print("No feedback found.")
+        return
+
+    print("Recent Feedback")
+    print("-" * 80)
+
+    for item in feedback:
+        print(f"ID         : {item['id']}")
+        print(f"Question   : {item['question']}")
+        print(f"Rating     : {item['rating']}")
+        print(f"Confidence : {item['confidence_score']}")
+        print(f"Source     : {item['source']}")
+        print(f"Created    : {item['created_at']}")
+        print("-" * 80)        
+
 
 if __name__ == "__main__":
     main()
+    
+    
+    

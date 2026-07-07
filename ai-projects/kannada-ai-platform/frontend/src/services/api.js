@@ -61,6 +61,7 @@ export async function createAdminKnowledge(payload) {
 
   return response.json();
 }
+
 export async function getAdminDashboard() {
   const response = await fetch(`${API_BASE_URL}/admin/knowledge/dashboard`);
 
@@ -69,4 +70,18 @@ export async function getAdminDashboard() {
   }
 
   return response.json();
+}
+
+export async function refreshAdminKnowledge() {
+  const response = await fetch(`${API_BASE_URL}/admin/refresh`, {
+    method: "POST",
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.status !== "success") {
+    throw new Error(data.message || "Failed to refresh knowledge");
+  }
+
+  return data;
 }

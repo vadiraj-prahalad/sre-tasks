@@ -2,7 +2,9 @@ import { useState } from "react";
 import {
   askQuestion,
   createAdminKnowledge,
+  getAdminDashboard,
   listAdminKnowledge,
+  refreshAdminKnowledge,
   submitFeedback,
 } from "./services/api";
 import "./App.css";
@@ -102,7 +104,10 @@ function App() {
   const [error, setError] = useState("");
 
   const [adminArticles, setAdminArticles] = useState([]);
+  const [adminDashboard, setAdminDashboard] = useState(null);
   const [adminStatus, setAdminStatus] = useState("");
+  const [refreshStatus, setRefreshStatus] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
   const [adminForm, setAdminForm] = useState({
     question: "",
     answer: "",
@@ -165,10 +170,15 @@ function App() {
     }
   }
 
-  async function loadAdminArticles() {
+  async function loadAdminData() {
     try {
-      const data = await listAdminKnowledge();
-      setAdminArticles(data.articles || []);
+      const [articlesData, dashboardData] = await Promise.all([
+        listAdminKnowledge(),
+        getAdminDashboard(),
+      ]);
+
+      setAdminArticles(articlesData.articles || []);
+      setAdminDashboard(dashboardData);
       setAdminStatus("");
     } catch {
       setAdminStatus("Admin knowledge load failed.");
@@ -193,9 +203,24 @@ function App() {
         category: "general",
       });
 
-      await loadAdminArticles();
+      await loadAdminData();
     } catch {
       setAdminStatus("Failed to save admin article.");
+    }
+  }
+
+  async function handleRefreshKnowledge() {
+    setRefreshing(true);
+    setRefreshStatus("Refreshing knowledge...");
+
+    try {
+      const result = await refreshAdminKnowledge();
+      setRefreshStatus(result.message || "Knowledge refresh completed.");
+      await loadAdminData();
+    } catch (error) {
+      setRefreshStatus(error.message || "Knowledge refresh failed.");
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -223,7 +248,7 @@ function App() {
                   setAdminMode(event.target.checked);
 
                   if (event.target.checked) {
-                    loadAdminArticles();
+                    loadAdminData();
                   }
                 }}
               />
@@ -265,8 +290,52 @@ function App() {
         {adminMode && (
           <section className="admin-card">
             <div className="admin-header">
-              <h2>Admin Knowledge CMS</h2>
-              <p>Add verified knowledge without editing JSON manually.</p>
+              <h2>Knowledge Dashboard</h2>
+              <p>Manage verified Kannada knowledge without editing JSON manually.</p>
+            </div>
+
+            {adminDashboard && (
+              <div className="dashboard-grid">
+                <div className="dashboard-tile">
+                  <span>Total Articles</span>
+                  <strong>{adminDashboard.total_articles}</strong>
+                </div>
+
+                <div className="dashboard-tile">
+                  <span>Categories</span>
+                  <strong>{Object.keys(adminDashboard.categories || {}).length}</strong>
+                </div>
+
+                <div className="dashboard-tile">
+                  <span>Recent Articles</span>
+                  <strong>{adminDashboard.recent_articles?.length || 0}</strong>
+                </div>
+              </div>
+            )}
+
+            {adminDashboard?.categories && (
+              <div className="category-panel">
+                <h3>Category Distribution</h3>
+                {Object.entries(adminDashboard.categories).map(([category, count]) => (
+                  <div className="category-row" key={category}>
+                    <span>{category}</span>
+                    <strong>{count}</strong>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="admin-refresh-row">
+              <button
+                className="primary-button"
+                type="button"
+                onClick={handleRefreshKnowledge}
+                disabled={refreshing}
+              >
+                {refreshing ? "Refreshing..." : "Refresh Knowledge"}
+              </button>
+
+              {refreshStatus && <p className="admin-status">{refreshStatus}</p>}
             </div>
 
             <form className="admin-form" onSubmit={handleAdminSubmit}>

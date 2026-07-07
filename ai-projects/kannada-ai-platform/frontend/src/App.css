@@ -81,7 +81,8 @@ textarea {
   outline: none;
 }
 
-textarea:focus {
+textarea:focus,
+input:focus {
   border-color: #5b35d5;
   box-shadow: 0 0 0 4px rgba(91, 53, 213, 0.12);
 }
@@ -206,6 +207,20 @@ button:disabled {
   text-align: center;
 }
 
+.memory-card {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  display: grid;
+  gap: 4px;
+}
+
 .trust-card {
   display: flex;
   flex-direction: column;
@@ -324,6 +339,15 @@ button:disabled {
   padding: 9px 12px;
 }
 
+.feedback-status {
+  width: 100%;
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 700;
+  text-align: center;
+}
+
 .trace-section {
   margin-top: 18px;
   border-top: 1px solid #e2dcff;
@@ -374,73 +398,6 @@ button:disabled {
   line-height: 1.5;
 }
 
-@media (max-width: 640px) {
-  .app {
-    padding: 14px;
-  }
-
-  .top-row,
-  .feedback-card {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .hero {
-    margin-top: 10px;
-  }
-
-  .hero h1 {
-    font-size: 30px;
-  }
-
-  .hero p {
-    font-size: 15px;
-  }
-
-  .ask-card,
-  .chat-panel {
-    border-radius: 22px;
-    padding: 16px;
-  }
-
-  textarea,
-  .answer-text {
-    font-size: 17px;
-  }
-}
-.feedback-status {
-  width: 100%;
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: #166534;
-  font-weight: 700;
-  text-align: center;
-}
-
-.memory-card {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #3730a3;
-  border-radius: 14px;
-  padding: 10px 12px;
-  margin-bottom: 14px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 800;
-}
-.memory-card {
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  color: #3730a3;
-  border-radius: 14px;
-  padding: 10px 12px;
-  margin-bottom: 14px;
-  text-align: center;
-  font-size: 13px;
-  font-weight: 800;
-  display: grid;
-  gap: 4px;
-}
 .admin-card {
   background: white;
   border: 1px solid #d7cff8;
@@ -466,6 +423,71 @@ button:disabled {
   font-weight: 600;
 }
 
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 16px 0;
+}
+
+.dashboard-tile {
+  background: #f4f0ff;
+  border: 1px solid #ddd2ff;
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+}
+
+.dashboard-tile span {
+  display: block;
+  color: #5b35d5;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.dashboard-tile strong {
+  display: block;
+  color: #2b225a;
+  font-size: 30px;
+}
+
+.category-panel {
+  background: #f8fbff;
+  border: 1px solid #e2dcff;
+  border-radius: 18px;
+  padding: 14px;
+  margin: 16px 0;
+}
+
+.category-panel h3 {
+  margin: 0 0 12px;
+  text-align: center;
+  color: #2b225a;
+}
+
+.category-row {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #e2dcff;
+  padding: 9px 0;
+  color: #30303a;
+  font-weight: 700;
+}
+
+.category-row:last-child {
+  border-bottom: none;
+}
+
+.admin-refresh-row {
+  margin-top: 14px;
+  margin-bottom: 18px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
 .admin-form {
   display: grid;
   gap: 12px;
@@ -481,12 +503,6 @@ button:disabled {
   padding: 13px 14px;
   box-sizing: border-box;
   outline: none;
-}
-
-.admin-form input:focus,
-.admin-form textarea:focus {
-  border-color: #5b35d5;
-  box-shadow: 0 0 0 4px rgba(91, 53, 213, 0.12);
 }
 
 .admin-status {
@@ -535,4 +551,43 @@ button:disabled {
   padding: 5px 9px;
   font-size: 12px;
   font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .app {
+    padding: 14px;
+  }
+
+  .top-row,
+  .feedback-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    margin-top: 10px;
+  }
+
+  .hero h1 {
+    font-size: 30px;
+  }
+
+  .hero p {
+    font-size: 15px;
+  }
+
+  .ask-card,
+  .chat-panel {
+    border-radius: 22px;
+    padding: 16px;
+  }
+
+  textarea,
+  .answer-text {
+    font-size: 17px;
+  }
 }

@@ -1,5 +1,6 @@
 from app.llm.local_llm import get_llm_response
 from app.services.alias_service import resolve_alias
+from app.services.domain_classifier import classify_domain, requires_verified_source
 from app.services.draft_knowledge_service import save_draft_answer
 from app.services.knowledge_service import find_known_answer, find_known_answer_by_key
 from app.services.query_normalizer import normalize_question
@@ -8,6 +9,13 @@ from app.services.related_topics_service import get_related_topics
 
 
 FALLBACK_ANSWER = "ಈ ವಿಷಯದ ಉತ್ತರವನ್ನು ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+
+VERIFIED_ONLY_FALLBACK_ANSWER = (
+    "ಈ ವಿಷಯಕ್ಕೆ ಪರಿಶೀಲಿತ ಮಾಹಿತಿ ಇನ್ನೂ ಜ್ಞಾನ ಸಂಗ್ರಹದಲ್ಲಿ ಲಭ್ಯವಿಲ್ಲ.\n\n"
+    "ಧಾರ್ಮಿಕ, ವೈದ್ಯಕೀಯ ಅಥವಾ ಕಾನೂನು ಸಂಬಂಧಿತ ವಿಷಯಗಳಲ್ಲಿ ತಪ್ಪು ಮಾಹಿತಿ ನೀಡದಂತೆ, "
+    "ಪರಿಶೀಲಿತ ಮೂಲ ಸೇರಿಸಿದ ನಂತರ ಮಾತ್ರ ಉತ್ತರ ನೀಡಲಾಗುತ್ತದೆ.\n\n"
+    "ಮೂಲ: Verified source required"
+)
 
 
 def route_llm(prompt: str) -> str:
@@ -59,15 +67,49 @@ Kannada answer:
 """
 
 
+def build_verified_only_response(
+    trace: list[dict],
+    related_topics: list[str],
+    domain: str,
+) -> dict:
+    trace.append({
+        "step": "Domain Safety",
+        "status": "blocked",
+        "details": f"Domain '{domain}' requires verified source. LLM fallback skipped.",
+    })
+
+    return {
+        "answer": VERIFIED_ONLY_FALLBACK_ANSWER,
+        "trace": trace,
+        "related_topics": related_topics,
+        "confidence": {
+            "score": 0,
+            "label": "Low",
+            "kannada_label": "ಪರಿಶೀಲಿತ ಮೂಲ ಅಗತ್ಯ",
+            "reasons": [
+                "Sensitive domain detected",
+                "Verified source required",
+                "LLM fallback skipped",
+            ],
+        },
+    }
+
+
 def route_llm_with_trace(prompt: str) -> dict:
     related_topics = get_related_topics(prompt)
+    domain = classify_domain(prompt)
 
     trace = [
         {
             "step": "Router",
             "status": "started",
             "details": "Routing question.",
-        }
+        },
+        {
+            "step": "Domain Classifier",
+            "status": domain,
+            "details": f"Detected domain: {domain}",
+        },
     ]
 
     normalized_question = normalize_question(prompt)
@@ -150,6 +192,13 @@ def route_llm_with_trace(prompt: str) -> dict:
         "status": "missed",
         "details": "No verified known answer or RAG source found.",
     })
+
+    if requires_verified_source(prompt):
+        return build_verified_only_response(
+            trace=trace,
+            related_topics=related_topics,
+            domain=domain,
+        )
 
     fallback_prompt = build_general_ai_prompt(normalized_question)
 

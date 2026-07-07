@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.feedback import router as feedback_router
 
 from app.api.ask import router as ask_router
-
+from app.api.admin_knowledge import router as admin_knowledge_router
 app = FastAPI()
 
 app.add_middleware(
@@ -21,6 +21,7 @@ app.add_middleware(
 
 app.include_router(ask_router)
 app.include_router(feedback_router)
+app.include_router(admin_knowledge_router)
 
 @app.get("/health")
 def health():

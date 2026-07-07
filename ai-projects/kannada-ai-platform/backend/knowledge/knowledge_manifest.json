@@ -16,6 +16,11 @@
       "file": "raw/language.json",
       "enabled": true,
       "domain": "language"
-    }
+    },
+    {
+  "file": "raw/admin_articles.json",
+  "enabled": true,
+  "domain": "admin"
+  }
   ]
 }

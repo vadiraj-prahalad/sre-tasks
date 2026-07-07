@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.services.admin_knowledge_service import (
     add_admin_article,
     delete_admin_article,
+    get_admin_dashboard,
     list_admin_articles,
 )
 
@@ -14,6 +15,11 @@ def get_admin_knowledge():
     return {
         "articles": list_admin_articles(),
     }
+
+
+@router.get("/knowledge/dashboard")
+def get_knowledge_dashboard():
+    return get_admin_dashboard()
 
 
 @router.post("/knowledge")

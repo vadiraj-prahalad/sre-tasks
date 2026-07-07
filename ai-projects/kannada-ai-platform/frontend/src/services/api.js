@@ -61,3 +61,12 @@ export async function createAdminKnowledge(payload) {
 
   return response.json();
 }
+export async function getAdminDashboard() {
+  const response = await fetch(`${API_BASE_URL}/admin/knowledge/dashboard`);
+
+  if (!response.ok) {
+    throw new Error("Failed to load admin dashboard");
+  }
+
+  return response.json();
+}

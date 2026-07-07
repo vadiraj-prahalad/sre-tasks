@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -30,6 +31,17 @@ def save_admin_articles(articles: list[dict[str, Any]]) -> None:
 
 def list_admin_articles() -> list[dict[str, Any]]:
     return load_admin_articles()
+
+
+def get_admin_dashboard() -> dict[str, Any]:
+    articles = load_admin_articles()
+    categories = Counter(article.get("category", "general") for article in articles)
+
+    return {
+        "total_articles": len(articles),
+        "categories": dict(categories),
+        "recent_articles": list(reversed(articles[-10:])),
+    }
 
 
 def add_admin_article(

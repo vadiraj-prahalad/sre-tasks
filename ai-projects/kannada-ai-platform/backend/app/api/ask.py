@@ -2,7 +2,6 @@ from fastapi import APIRouter
 
 from app.llm.router import route_llm, route_llm_with_trace
 
-
 router = APIRouter()
 
 
@@ -18,6 +17,7 @@ def ask_question(payload: dict):
             "question": question,
             "answer": result["answer"],
             "confidence": result.get("confidence"),
+            "related_topics": result.get("related_topics", []),
             "trace": [
                 {
                     "step": "POST /ask",
@@ -33,9 +33,11 @@ def ask_question(payload: dict):
             ],
         }
 
-    response = route_llm(question)
+    result = route_llm_with_trace(question)
 
     return {
         "question": question,
-        "answer": response,
+        "answer": result["answer"],
+        "confidence": result.get("confidence"),
+        "related_topics": result.get("related_topics", []),
     }

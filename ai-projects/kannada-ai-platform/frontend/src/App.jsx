@@ -9,13 +9,6 @@ const suggestedQuestions = [
   { label: "📝 ಕನ್ನಡ ವ್ಯಾಕರಣ", question: "ಕನ್ನಡ ವ್ಯಾಕರಣ ಎಂದರೇನು?" },
 ];
 
-const relatedQuestions = [
-  { label: "📚 ಕನ್ನಡ ಸಾಹಿತ್ಯ", question: "ಕನ್ನಡ ಸಾಹಿತ್ಯ ಎಂದರೇನು?" },
-  { label: "📝 ನಾಮಪದ", question: "ನಾಮಪದ ಎಂದರೇನು?" },
-  { label: "🏛 ಹಂಪಿ", question: "ಹಂಪಿ ಎಂದರೇನು?" },
-  { label: "🎉 ಉಗಾದಿ", question: "ಉಗಾದಿ ಎಂದರೇನು?" },
-];
-
 function splitAnswerAndSources(rawAnswer) {
   if (!rawAnswer || !rawAnswer.includes("\n\nಮೂಲ:")) {
     return { answerText: rawAnswer || "", sources: [] };
@@ -80,6 +73,7 @@ function App() {
   const [answer, setAnswer] = useState("");
   const [trace, setTrace] = useState([]);
   const [confidence, setConfidence] = useState(null);
+  const [relatedTopics, setRelatedTopics] = useState([]);
   const [showTrace, setShowTrace] = useState(false);
   const [developerMode, setDeveloperMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -96,6 +90,7 @@ function App() {
     setAnswer("");
     setTrace([]);
     setConfidence(null);
+    setRelatedTopics([]);
     setShowTrace(false);
     setLastQuestion(selectedQuestion);
     setQuestion(selectedQuestion);
@@ -105,6 +100,7 @@ function App() {
       setAnswer(data.answer);
       setTrace(data.trace || []);
       setConfidence(data.confidence || null);
+      setRelatedTopics(data.related_topics || []);
     } catch {
       setError("Backend ಸಂಪರ್ಕದಲ್ಲಿ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.");
     } finally {
@@ -236,20 +232,22 @@ function App() {
                   </div>
                 )}
 
-                <div className="related-card">
-                  <span className="section-label">🔍 ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ</span>
-                  <div className="related-list">
-                    {relatedQuestions.map((item) => (
-                      <button
-                        key={item.question}
-                        onClick={() => handleAsk(item.question)}
-                        disabled={loading}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
+                {relatedTopics.length > 0 && (
+                  <div className="related-card">
+                    <span className="section-label">🔍 ಇನ್ನಷ್ಟು ಅನ್ವೇಷಿಸಿ</span>
+                    <div className="related-list">
+                      {relatedTopics.map((topic) => (
+                        <button
+                          key={topic}
+                          onClick={() => handleAsk(topic)}
+                          disabled={loading}
+                        >
+                          {topic}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="feedback-card">
                   <span>ಈ ಉತ್ತರ ಉಪಯುಕ್ತವಾಗಿತ್ತೇ?</span>

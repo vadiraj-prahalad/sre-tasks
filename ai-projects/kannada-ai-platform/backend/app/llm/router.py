@@ -1,9 +1,10 @@
 from app.llm.local_llm import get_llm_response
 from app.services.alias_service import resolve_alias
+from app.services.draft_knowledge_service import save_draft_answer
 from app.services.knowledge_service import find_known_answer, find_known_answer_by_key
 from app.services.query_normalizer import normalize_question
 from app.services.rag_service import answer_from_rag_with_trace
-from app.services.draft_knowledge_service import save_draft_answer
+from app.services.related_topics_service import get_related_topics
 
 
 FALLBACK_ANSWER = "ಈ ವಿಷಯದ ಉತ್ತರವನ್ನು ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ನಂತರ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
@@ -14,10 +15,16 @@ def route_llm(prompt: str) -> str:
     return result["answer"]
 
 
-def build_high_confidence_response(answer: str, trace: list[dict], reason: str) -> dict:
+def build_high_confidence_response(
+    answer: str,
+    trace: list[dict],
+    reason: str,
+    related_topics: list[str],
+) -> dict:
     return {
         "answer": answer,
         "trace": trace,
+        "related_topics": related_topics,
         "confidence": {
             "score": 95,
             "label": "High",
@@ -53,6 +60,8 @@ Kannada answer:
 
 
 def route_llm_with_trace(prompt: str) -> dict:
+    related_topics = get_related_topics(prompt)
+
     trace = [
         {
             "step": "Router",
@@ -81,6 +90,7 @@ def route_llm_with_trace(prompt: str) -> dict:
             answer=known_answer,
             trace=trace,
             reason="Known answer store matched",
+            related_topics=related_topics,
         )
 
     alias_key = resolve_alias(prompt)
@@ -98,6 +108,7 @@ def route_llm_with_trace(prompt: str) -> dict:
                 answer=alias_answer,
                 trace=trace,
                 reason="Matched curated alias before normalization",
+                related_topics=related_topics,
             )
 
     normalized_alias_key = resolve_alias(normalized_question)
@@ -115,6 +126,7 @@ def route_llm_with_trace(prompt: str) -> dict:
                 answer=normalized_alias_answer,
                 trace=trace,
                 reason="Matched curated alias after normalization",
+                related_topics=related_topics,
             )
 
     rag_result = answer_from_rag_with_trace(normalized_question)
@@ -130,6 +142,7 @@ def route_llm_with_trace(prompt: str) -> dict:
             "answer": rag_result["answer"],
             "trace": trace,
             "confidence": rag_result.get("confidence"),
+            "related_topics": related_topics,
         }
 
     trace.append({
@@ -158,6 +171,7 @@ def route_llm_with_trace(prompt: str) -> dict:
         return {
             "answer": FALLBACK_ANSWER,
             "trace": trace,
+            "related_topics": related_topics,
             "confidence": {
                 "score": 0,
                 "label": "Low",
@@ -171,6 +185,7 @@ def route_llm_with_trace(prompt: str) -> dict:
         "status": "completed",
         "details": "Ollama fallback answer generated.",
     })
+
     draft_result = save_draft_answer(normalized_question, fallback_answer)
 
     trace.append({
@@ -191,6 +206,7 @@ def route_llm_with_trace(prompt: str) -> dict:
     return {
         "answer": answer,
         "trace": trace,
+        "related_topics": related_topics,
         "confidence": {
             "score": 55,
             "label": "Medium",

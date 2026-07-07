@@ -9,6 +9,18 @@ const suggestedQuestions = [
   { label: "📝 ಕನ್ನಡ ವ್ಯಾಕರಣ", question: "ಕನ್ನಡ ವ್ಯಾಕರಣ ಎಂದರೇನು?" },
 ];
 
+function getConversationId() {
+  const existingId = localStorage.getItem("kannada_ai_conversation_id");
+
+  if (existingId) {
+    return existingId;
+  }
+
+  const newId = crypto.randomUUID();
+  localStorage.setItem("kannada_ai_conversation_id", newId);
+  return newId;
+}
+
 function splitAnswerAndSources(rawAnswer) {
   if (!rawAnswer || !rawAnswer.includes("\n\nಮೂಲ:")) {
     return { answerText: rawAnswer || "", sources: [] };
@@ -68,6 +80,7 @@ function getTrustBadge(confidence) {
 }
 
 function App() {
+  const [conversationId] = useState(getConversationId);
   const [question, setQuestion] = useState("");
   const [lastQuestion, setLastQuestion] = useState("");
   const [answer, setAnswer] = useState("");
@@ -77,6 +90,7 @@ function App() {
   const [showTrace, setShowTrace] = useState(false);
   const [developerMode, setDeveloperMode] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState("");
+  const [memoryInfo, setMemoryInfo] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -98,15 +112,17 @@ function App() {
     setRelatedTopics([]);
     setShowTrace(false);
     setFeedbackStatus("");
+    setMemoryInfo(null);
     setLastQuestion(selectedQuestion);
     setQuestion(selectedQuestion);
 
     try {
-      const data = await askQuestion(selectedQuestion, true);
+      const data = await askQuestion(selectedQuestion, true, conversationId);
       setAnswer(data.answer);
       setTrace(data.trace || []);
       setConfidence(data.confidence || null);
       setRelatedTopics(data.related_topics || []);
+      setMemoryInfo(data.memory || null);
     } catch {
       setError("Backend ಸಂಪರ್ಕದಲ್ಲಿ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.");
     } finally {
@@ -207,6 +223,14 @@ function App() {
                 <div className="answer-header">
                   <h2>ಉತ್ತರ</h2>
                 </div>
+
+                {developerMode && memoryInfo?.used && (
+                  <div className="memory-card">
+                    <strong>Conversation Memory</strong>
+                    <span>Memory used: YES</span>
+                    <span>Entity: {memoryInfo.entity}</span>
+                  </div>
+                )}
 
                 <p className="answer-text">{answerText}</p>
 

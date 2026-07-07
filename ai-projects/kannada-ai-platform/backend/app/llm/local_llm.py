@@ -1,8 +1,17 @@
+import os
+
 import requests
 
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-MODEL_NAME = "llama3.2"
+OLLAMA_URL = os.getenv(
+    "OLLAMA_URL",
+    "http://localhost:11434/api/generate",
+)
+
+MODEL_NAME = os.getenv(
+    "OLLAMA_MODEL",
+    "llama3.2",
+)
 
 
 def get_llm_response(prompt: str) -> str:

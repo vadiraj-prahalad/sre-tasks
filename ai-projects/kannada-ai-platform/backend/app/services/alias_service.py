@@ -23,6 +23,11 @@ def resolve_alias(question: str) -> str | None:
         return exact_match
 
     for alias, key in aliases.items():
+        alias = alias.strip().lower()
+
+        if len(alias) < 6:
+            continue
+
         if alias in cleaned_question:
             return key
 

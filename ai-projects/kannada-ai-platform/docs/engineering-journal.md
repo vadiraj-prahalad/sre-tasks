@@ -110,3 +110,32 @@ Approx. 9 hours
 - Improve top-k selection
 - Return only relevant sources
 - Resume React UI improvements
+
+## 2026-07-07
+
+### Decision
+Developer Trace should only be visible in Developer Mode.
+
+Reason
+End users should see a clean interface.
+
+---
+
+### Decision
+
+Sensitive domains (Religion/Medical/Legal)
+must never fall back to LLM.
+
+Reason
+
+Incorrect information in these domains is high risk.
+
+---
+
+### Decision
+
+Feedback stored inside SQLite instead of files.
+
+Reason
+
+Enables analytics and future dashboards.

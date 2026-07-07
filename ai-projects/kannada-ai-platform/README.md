@@ -27,5 +27,25 @@ Router
 Local LLM
  ↓
 Ollama / Llama3
+
+## Current Status
+
+Version: Beta 0.4
+
+Completed
+
+✅ Knowledge Engine
+✅ RAG
+✅ Knowledge Packs
+✅ Feedback System
+✅ Draft Queue
+✅ Domain Safety
+✅ Related Topics
+
+Next
+
+- Conversation Memory
+- Admin Dashboard
+- Production Deployment
 ````
 

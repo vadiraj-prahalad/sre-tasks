@@ -6,26 +6,28 @@ from app.db.tools.generate_chunk_embeddings import generate_chunk_embeddings
 from app.db.tools.ingest_all_sources import ingest_all_sources
 from app.db.tools.list_documents import main as list_documents
 from app.db.tools.sync_standardized_articles import sync_standardized_articles
-from app.services.draft_knowledge_service import list_draft_answers
-from app.services.knowledge_loader import load_knowledge_to_db
-from scripts.refresh_knowledge import main as refresh_jsonl
 from app.services.draft_knowledge_service import (
+    approve_draft_answer,
     delete_draft_answer,
     list_draft_answers,
 )
+from app.services.knowledge_loader import load_knowledge_to_db
+from scripts.refresh_knowledge import main as refresh_jsonl
 
 
 def print_usage() -> None:
     print("Usage: python manage.py <command>")
     print("")
     print("Available commands:")
-    print("  list       Show knowledge library")
-    print("  ingest     Ingest all sources from manifest")
-    print("  embed      Generate embeddings for chunks")
-    print("  sync       Ingest sources and generate embeddings")
-    print("  evaluate   Run RAG evaluation")
-    print("  refresh    Refresh knowledge, reload SQLite, embed, and evaluate")
-    print("  drafts     Show draft knowledge captured from Ollama fallback")
+    print("  list                                  Show knowledge library")
+    print("  ingest                                Ingest all sources from manifest")
+    print("  embed                                 Generate embeddings for chunks")
+    print("  sync                                  Ingest sources and generate embeddings")
+    print("  evaluate                              Run RAG evaluation")
+    print("  refresh                               Refresh knowledge, reload SQLite, embed, and evaluate")
+    print("  drafts                                Show draft knowledge captured from Ollama fallback")
+    print("  delete-draft <id>                     Delete a bad draft answer")
+    print('  approve-draft <id> "<answer>" "<category>"   Approve draft into knowledge')
 
 
 def show_drafts() -> None:
@@ -83,6 +85,7 @@ def refresh_knowledge() -> None:
     print("Refresh Summary")
     print("---------------")
     print(f"Records loaded : {load_result['records_loaded']}")
+    print(f"Articles synced: {sync_result['articles_synced']}")
     print("Embeddings     : Generated")
     print(
         f"Evaluation     : {evaluation_result['passed']} passed, "
@@ -95,6 +98,43 @@ def refresh_knowledge() -> None:
         print("Full knowledge refresh completed successfully")
     else:
         print("Refresh completed with evaluation failures")
+        raise SystemExit(1)
+
+
+def delete_draft_command() -> None:
+    if len(sys.argv) < 3:
+        print("Usage: python manage.py delete-draft <id>")
+        raise SystemExit(1)
+
+    draft_id = int(sys.argv[2])
+    result = delete_draft_answer(draft_id)
+
+    if result["status"] == "deleted":
+        print(f"Deleted draft ID: {draft_id}")
+    else:
+        print(f"Draft not found: {draft_id}")
+        raise SystemExit(1)
+
+
+def approve_draft_command() -> None:
+    if len(sys.argv) < 5:
+        print('Usage: python manage.py approve-draft <id> "<answer>" "<category>"')
+        raise SystemExit(1)
+
+    draft_id = int(sys.argv[2])
+    approved_answer = sys.argv[3]
+    category = sys.argv[4]
+
+    result = approve_draft_answer(draft_id, approved_answer, category)
+
+    if result["status"] == "approved":
+        print(f"Approved draft ID: {draft_id}")
+        print(f"Question: {result['question']}")
+        print(f"Category: {result['category']}")
+        print("")
+        print("Next step: run python manage.py refresh")
+    else:
+        print(f"Draft not found or already approved: {draft_id}")
         raise SystemExit(1)
 
 
@@ -123,18 +163,9 @@ def main() -> None:
     elif command == "drafts":
         show_drafts()
     elif command == "delete-draft":
-        if len(sys.argv) < 3:
-            print("Usage: python manage.py delete-draft <id>")
-            raise SystemExit(1)
-
-        draft_id = int(sys.argv[2])
-        result = delete_draft_answer(draft_id)
-
-        if result["status"] == "deleted":
-            print(f"Deleted draft ID: {draft_id}")
-        else:
-            print(f"Draft not found: {draft_id}")
-            raise SystemExit(1)    
+        delete_draft_command()
+    elif command == "approve-draft":
+        approve_draft_command()
     else:
         print(f"Unknown command: {command}")
         print_usage()

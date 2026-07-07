@@ -28,3 +28,5 @@ Simplifies operations:
 python manage.py list
 python manage.py sync
 python manage.py evaluate
+
+- 2026-07-06: The original v0.1 static JSON architecture evolved into a layered trusted-knowledge + RAG + Ollama fallback architecture with SQLite-backed knowledge stores, embeddings, confidence scoring, developer trace, and PWA frontend.

@@ -169,3 +169,79 @@ def delete_draft_answer(draft_id: int) -> dict[str, Any]:
         "status": "deleted",
         "draft_id": draft_id,
     }
+
+def approve_draft_answer(
+    draft_id: int,
+    approved_answer: str,
+    category: str,
+) -> dict[str, Any]:
+    create_draft_table()
+
+    connection = connect_db()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        SELECT question
+        FROM draft_knowledge
+        WHERE id = ?
+          AND status = 'draft'
+        """,
+        (draft_id,),
+    )
+
+    row = cursor.fetchone()
+
+    if not row:
+        connection.close()
+        return {
+            "status": "not_found",
+            "draft_id": draft_id,
+        }
+
+    question = row[0]
+
+    cursor.execute(
+        """
+        INSERT INTO knowledge_articles (
+            id,
+            question,
+            answer,
+            category,
+            source,
+            language,
+            created_at
+        )
+        VALUES (
+            lower(hex(randomblob(8))),
+            ?,
+            ?,
+            ?,
+            'human_reviewed_draft',
+            'kn',
+            CURRENT_TIMESTAMP
+        )
+        """,
+        (question, approved_answer, category),
+    )
+
+    cursor.execute(
+        """
+        UPDATE draft_knowledge
+        SET
+            status = 'approved',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (draft_id,),
+    )
+
+    connection.commit()
+    connection.close()
+
+    return {
+        "status": "approved",
+        "draft_id": draft_id,
+        "question": question,
+        "category": category,
+    }

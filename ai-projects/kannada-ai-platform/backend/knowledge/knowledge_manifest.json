@@ -21,6 +21,16 @@
   "file": "raw/admin_articles.json",
   "enabled": true,
   "domain": "admin"
-  }
+    },{
+  "file": "raw/beta_core.json",
+  "enabled": true,
+  "domain": "beta_core"
+},
+{
+  "file": "raw/beta_core.json",
+  "enabled": true,
+  "domain": "beta_core"
+}
+  
   ]
 }

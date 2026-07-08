@@ -1,12 +1,6 @@
 import { useState } from "react";
-import {
-  askQuestion,
-  createAdminKnowledge,
-  getAdminDashboard,
-  listAdminKnowledge,
-  refreshAdminKnowledge,
-  submitFeedback,
-} from "./services/api";
+import AdminDashboard from "./components/AdminDashboard";
+import { askQuestion, submitFeedback } from "./services/api";
 import "./App.css";
 
 const suggestedQuestions = [
@@ -103,17 +97,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [adminArticles, setAdminArticles] = useState([]);
-  const [adminDashboard, setAdminDashboard] = useState(null);
-  const [adminStatus, setAdminStatus] = useState("");
-  const [refreshStatus, setRefreshStatus] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
-  const [adminForm, setAdminForm] = useState({
-    question: "",
-    answer: "",
-    category: "general",
-  });
-
   const { answerText, sources } = splitAnswerAndSources(answer);
   const trustBadge = getTrustBadge(confidence);
   const isTrustedAnswer = confidence?.score >= 90;
@@ -170,60 +153,6 @@ function App() {
     }
   }
 
-  async function loadAdminData() {
-    try {
-      const [articlesData, dashboardData] = await Promise.all([
-        listAdminKnowledge(),
-        getAdminDashboard(),
-      ]);
-
-      setAdminArticles(articlesData.articles || []);
-      setAdminDashboard(dashboardData);
-      setAdminStatus("");
-    } catch {
-      setAdminStatus("Admin knowledge load failed.");
-    }
-  }
-
-  async function handleAdminSubmit(event) {
-    event.preventDefault();
-
-    if (!adminForm.question.trim() || !adminForm.answer.trim()) {
-      setAdminStatus("Question and answer are required.");
-      return;
-    }
-
-    try {
-      const result = await createAdminKnowledge(adminForm);
-
-      setAdminStatus(`Article saved. Total admin articles: ${result.total_articles}`);
-      setAdminForm({
-        question: "",
-        answer: "",
-        category: "general",
-      });
-
-      await loadAdminData();
-    } catch {
-      setAdminStatus("Failed to save admin article.");
-    }
-  }
-
-  async function handleRefreshKnowledge() {
-    setRefreshing(true);
-    setRefreshStatus("Refreshing knowledge...");
-
-    try {
-      const result = await refreshAdminKnowledge();
-      setRefreshStatus(result.message || "Knowledge refresh completed.");
-      await loadAdminData();
-    } catch (error) {
-      setRefreshStatus(error.message || "Knowledge refresh failed.");
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
   return (
     <main className="app">
       <section className="shell">
@@ -244,13 +173,7 @@ function App() {
               <input
                 type="checkbox"
                 checked={adminMode}
-                onChange={(event) => {
-                  setAdminMode(event.target.checked);
-
-                  if (event.target.checked) {
-                    loadAdminData();
-                  }
-                }}
+                onChange={(event) => setAdminMode(event.target.checked)}
               />
               Admin Mode
             </label>
@@ -287,116 +210,7 @@ function App() {
           ))}
         </section>
 
-        {adminMode && (
-          <section className="admin-card">
-            <div className="admin-header">
-              <h2>Knowledge Dashboard</h2>
-              <p>Manage verified Kannada knowledge without editing JSON manually.</p>
-            </div>
-
-            {adminDashboard && (
-              <div className="dashboard-grid">
-                <div className="dashboard-tile">
-                  <span>Total Articles</span>
-                  <strong>{adminDashboard.total_articles}</strong>
-                </div>
-
-                <div className="dashboard-tile">
-                  <span>Categories</span>
-                  <strong>{Object.keys(adminDashboard.categories || {}).length}</strong>
-                </div>
-
-                <div className="dashboard-tile">
-                  <span>Recent Articles</span>
-                  <strong>{adminDashboard.recent_articles?.length || 0}</strong>
-                </div>
-              </div>
-            )}
-
-            {adminDashboard?.categories && (
-              <div className="category-panel">
-                <h3>Category Distribution</h3>
-                {Object.entries(adminDashboard.categories).map(([category, count]) => (
-                  <div className="category-row" key={category}>
-                    <span>{category}</span>
-                    <strong>{count}</strong>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className="admin-refresh-row">
-              <button
-                className="primary-button"
-                type="button"
-                onClick={handleRefreshKnowledge}
-                disabled={refreshing}
-              >
-                {refreshing ? "Refreshing..." : "Refresh Knowledge"}
-              </button>
-
-              {refreshStatus && <p className="admin-status">{refreshStatus}</p>}
-            </div>
-
-            <form className="admin-form" onSubmit={handleAdminSubmit}>
-              <input
-                value={adminForm.question}
-                onChange={(event) =>
-                  setAdminForm({
-                    ...adminForm,
-                    question: event.target.value,
-                  })
-                }
-                placeholder="Question / ಪ್ರಶ್ನೆ"
-              />
-
-              <textarea
-                value={adminForm.answer}
-                onChange={(event) =>
-                  setAdminForm({
-                    ...adminForm,
-                    answer: event.target.value,
-                  })
-                }
-                placeholder="Verified answer / ಪರಿಶೀಲಿತ ಉತ್ತರ"
-                rows="4"
-              />
-
-              <input
-                value={adminForm.category}
-                onChange={(event) =>
-                  setAdminForm({
-                    ...adminForm,
-                    category: event.target.value,
-                  })
-                }
-                placeholder="Category"
-              />
-
-              <button className="primary-button" type="submit">
-                Save Knowledge
-              </button>
-            </form>
-
-            {adminStatus && <p className="admin-status">{adminStatus}</p>}
-
-            <div className="admin-list">
-              <h3>Admin Articles</h3>
-
-              {adminArticles.length === 0 && <p>No admin articles yet.</p>}
-
-              {adminArticles.map((article, index) => (
-                <div className="admin-article" key={`${article.question}-${index}`}>
-                  <strong>
-                    {index + 1}. {article.question}
-                  </strong>
-                  <p>{article.answer}</p>
-                  <span>{article.category}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
+        {adminMode && <AdminDashboard />}
 
         {error && <div className="error">{error}</div>}
 

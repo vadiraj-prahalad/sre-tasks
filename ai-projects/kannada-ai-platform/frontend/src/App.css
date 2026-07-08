@@ -590,4 +590,15 @@ button:disabled {
   .answer-text {
     font-size: 17px;
   }
+
+.admin-search {
+  width: 100%;
+  border: 1px solid #d7cff8;
+  border-radius: 16px;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 13px 14px;
+  box-sizing: border-box;
+  outline: none;
+}  
 }

@@ -16,6 +16,7 @@ from app.services.feedback_dashboard_service import get_feedback_dashboard
 from app.services.internet_knowledge_service import import_topic_as_draft
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
+from app.services.bulk_topic_import_service import import_topics_from_file
 
 
 def print_usage() -> None:
@@ -35,6 +36,7 @@ def print_usage() -> None:
     print("  import-topic <topic> <category>           Import internet topic into draft queue")
     print("  rewrite-draft <draft_id>                  Rewrite draft into clean Kannada")
     print("  feedback                                  Show feedback dashboard")
+    print("  import-topics-file <file> <category>     Import many topics into draft queue")
 
 
 def show_drafts() -> None:
@@ -199,6 +201,21 @@ def rewrite_draft(draft_id: int) -> None:
     for key, value in result.items():
         print(f"{key}: {value}")
 
+def import_topics_file(topic_file: str, category: str) -> None:
+    result = import_topics_from_file(topic_file, category)
+
+    print("Bulk Internet Knowledge Import")
+    print("=" * 80)
+    print(f"Topic file        : {result['topic_file']}")
+    print(f"Category          : {result['category']}")
+    print(f"Total topics      : {result['total_topics']}")
+    print(f"Successful imports: {result['successful_imports']}")
+    print(f"Failed imports    : {result['failed_imports']}")
+    print("")
+
+    for item in result["results"]:
+        print(f"{item.get('topic')} -> {item.get('status')}")        
+
 
 def main() -> None:
     if len(sys.argv) < 2:
@@ -245,6 +262,15 @@ def main() -> None:
             return
 
         rewrite_draft(int(sys.argv[2]))
+    elif command == "import-topics-file":
+        if len(sys.argv) < 3:
+            print("Usage: python manage.py import-topics-file <file> <category>")
+            return
+
+        topic_file = sys.argv[2]
+        category = sys.argv[3] if len(sys.argv) > 3 else "general"
+
+        import_topics_file(topic_file, category)    
     else:
         print(f"Unknown command: {command}")
         print_usage()
@@ -252,3 +278,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

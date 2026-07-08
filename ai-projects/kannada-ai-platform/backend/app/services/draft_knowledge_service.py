@@ -24,7 +24,7 @@ def create_draft_table() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             question TEXT NOT NULL,
             answer TEXT NOT NULL,
-            source TEXT NOT NULL DEFAULT 'ollama_fallback',
+            source TEXT NOT NULL DEFAULT 'internet',
             status TEXT NOT NULL DEFAULT 'draft',
             hit_count INTEGER NOT NULL DEFAULT 1,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP,

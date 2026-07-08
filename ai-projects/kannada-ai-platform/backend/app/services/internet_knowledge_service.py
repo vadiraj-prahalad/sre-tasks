@@ -1,6 +1,7 @@
 from typing import Any
 
 from app.services.draft_knowledge_service import save_draft_answer
+from app.services.editorial_draft_service import generate_editorial_draft
 from app.services.internet_providers.kannada_wikipedia_provider import (
     KannadaWikipediaProvider,
 )
@@ -33,7 +34,7 @@ def build_kannada_draft_question(topic: str) -> str:
     return f"{topic} ಬಗ್ಗೆ ಹೇಳಿ"
 
 
-def build_source_summary(sources: list[dict[str, Any]]) -> str:
+def build_evidence_text(sources: list[dict[str, Any]]) -> str:
     lines = []
 
     for index, source in enumerate(sources, start=1):
@@ -41,10 +42,10 @@ def build_source_summary(sources: list[dict[str, Any]]) -> str:
             "\n".join(
                 [
                     f"{index}. Provider: {source.get('provider')}",
-                    f"   Trust: {source.get('trust_level')}",
-                    f"   Title: {source.get('title')}",
-                    f"   Summary: {source.get('summary')}",
-                    f"   URL: {source.get('url')}",
+                    f"Trust: {source.get('trust_level')}",
+                    f"Title: {source.get('title')}",
+                    f"Summary: {source.get('summary')}",
+                    f"URL: {source.get('url')}",
                 ]
             )
         )
@@ -52,23 +53,31 @@ def build_source_summary(sources: list[dict[str, Any]]) -> str:
     return "\n\n".join(lines)
 
 
-def build_kannada_draft_answer(
+def build_review_draft_answer(
     topic: str,
     category: str,
     sources: list[dict[str, Any]],
 ) -> str:
-    source_summary = build_source_summary(sources)
+    evidence_text = build_evidence_text(sources)
+
+    generated_draft = generate_editorial_draft(
+        topic=topic,
+        category=category,
+        evidence_text=evidence_text,
+    )
+
+    if not generated_draft:
+        generated_draft = "AI ಕನ್ನಡ ಕರಡು ಸಿದ್ಧಪಡಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಮೂಲಗಳ ಆಧಾರದ ಮೇಲೆ ಮಾನವ ಪರಿಶೀಲಿತ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ."
 
     return (
-        "ಈ ಲೇಖನವನ್ನು ಹಲವು ಇಂಟರ್ನೆಟ್ ಮೂಲಗಳ ಆಧಾರದ ಮೇಲೆ ಕರಡು ರೂಪದಲ್ಲಿ ಸಿದ್ಧಪಡಿಸಲಾಗಿದೆ.\n\n"
-        f"ವಿಷಯ: {topic}\n\n"
-        f"ವರ್ಗ: {category}\n\n"
+        "AI ಕನ್ನಡ ಕರಡು:\n\n"
+        f"{generated_draft}\n\n"
         "ಸಂಗ್ರಹಿಸಿದ ಮೂಲಗಳು:\n\n"
-        f"{source_summary}\n\n"
+        f"{evidence_text}\n\n"
         "ಗಮನಿಸಿ:\n"
         "1. ಈ ಕರಡು ಇನ್ನೂ ಪರಿಶೀಲಿತ ಉತ್ತರವಲ್ಲ.\n"
-        "2. ಮೂಲಗಳನ್ನು ಹೋಲಿಸಿ ಕನ್ನಡದಲ್ಲಿ ಸರಳ, ನಿಖರ ಮತ್ತು ಪರಿಶೀಲಿತ ಉತ್ತರವಾಗಿ ಮರುಬರೆಯಬೇಕು.\n"
-        "3. ಭಿನ್ನ ಮಾಹಿತಿ ಕಂಡುಬಂದರೆ ಮಾನವ ಪರಿಶೀಲನೆ ಅಗತ್ಯ."
+        "2. ಮಾನವ ಪರಿಶೀಲನೆಯ ನಂತರ ಮಾತ್ರ ಪ್ರಕಟಿಸಬೇಕು.\n"
+        "3. ತಪ್ಪು ಅಥವಾ ಅಸಹಜ ಕನ್ನಡ ಕಂಡುಬಂದರೆ ಸಂಪಾದಿಸಿ ಪ್ರಕಟಿಸಬೇಕು."
     )
 
 
@@ -87,7 +96,7 @@ def import_topic_as_draft(topic: str, category: str = "general") -> dict[str, An
 
     best_title = sources[0].get("title", topic)
     question = build_kannada_draft_question(best_title)
-    answer = build_kannada_draft_answer(
+    answer = build_review_draft_answer(
         topic=best_title,
         category=category,
         sources=sources,

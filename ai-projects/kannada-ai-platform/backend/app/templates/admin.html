@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Kannada AI Admin</title>
+
+    <style>
+
+        body{
+            font-family:Arial;
+            margin:40px;
+            background:#f7f7f7;
+        }
+
+        h1{
+            color:#333;
+        }
+
+        .draft{
+
+            background:white;
+
+            margin-bottom:15px;
+
+            padding:15px;
+
+            border-radius:8px;
+
+            box-shadow:0 0 4px rgba(0,0,0,.1);
+
+        }
+
+        .question{
+
+            font-size:18px;
+
+            font-weight:bold;
+
+            margin-bottom:10px;
+
+        }
+
+        .status{
+
+            color:green;
+
+            margin-bottom:10px;
+
+        }
+
+        pre{
+
+            white-space:pre-wrap;
+
+            font-family:inherit;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<h1>Kannada AI Admin Portal</h1>
+
+<div id="drafts"></div>
+
+<script>
+
+async function loadDrafts(){
+
+    const response=await fetch("/admin/drafts");
+
+    const data=await response.json();
+
+    let html="";
+
+    data.drafts.forEach(d=>{
+
+        html+=`
+
+        <div class="draft">
+
+            <div class="question">${d.question}</div>
+
+            <div class="status">
+
+                Status : ${d.status}
+
+            </div>
+
+            <pre>${d.answer}</pre>
+
+        </div>
+
+        `;
+
+    });
+
+    document.getElementById("drafts").innerHTML=html;
+
+}
+
+loadDrafts();
+
+</script>
+
+</body>
+
+</html>

@@ -1,4 +1,4 @@
-from app.llm.local_llm import get_llm_response
+from app.services.ai_editor_provider import generate_editorial_text
 from app.prompts.kannada_editorial_guidelines import KANNADA_EDITORIAL_GUIDELINES
 
 
@@ -38,8 +38,7 @@ Kannada draft:
 
 def generate_editorial_draft(topic: str, category: str, evidence_text: str) -> str:
     prompt = build_editorial_prompt(topic, category, evidence_text)
-    result = get_llm_response(prompt)
-
+    result = generate_editorial_text(prompt)
     if not result or "ಉತ್ತರವನ್ನು ಸಿದ್ಧಪಡಿಸಲು" in result:
         return ""
 

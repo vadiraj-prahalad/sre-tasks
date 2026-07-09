@@ -47,5 +47,33 @@ Next
 - Conversation Memory
 - Admin Dashboard
 - Production Deployment
+
+## Editorial AI
+
+The platform now separates knowledge creation from runtime inference.
+
+```
+Internet Sources
+      │
+      ▼
+GPT-5.5 Editorial AI
+      │
+Human Review
+      │
+SQLite Knowledge Base
+      │
+Embeddings
+      │
+Runtime Llama
+      │
+Users
+```
+
+This architecture enables:
+
+- High-quality Kannada
+- Low inference cost
+- Offline runtime
+- Provider independence
 ````
 

@@ -63,3 +63,46 @@ Private beta before end of July with:
 - trusted sources
 - semantic retrieval
 - source-backed answers
+
+## Current Phase
+
+Phase 4.2
+Knowledge Refresh Pipeline
+
+Completed
+----------
+✓ Hybrid Retrieval
+✓ Confidence Engine
+✓ Developer Trace
+✓ Alias Resolution
+✓ Evaluation Framework
+
+Next
+-----
+- Automatic Refresh Pipeline
+- Incremental Embeddings
+- Source Versioning
+
+Current Phase
+
+Phase 4.3
+
+Editorial Knowledge Generation
+
+Completed
+
+✓ GPT-5.5 Editorial Engine
+✓ AI Provider Layer
+✓ Editorial Prompt v2
+✓ Editorial Usage Logging
+✓ Cost Tracking
+✓ Human Editorial Workflow
+
+Next
+
+- 10 Topic Benchmark
+- Category-specific Editorial Templates
+- Bulk Import (500 Topics)
+- Bulk Import (1000 Topics)
+- Beta UI Polish
+- Feedback Analytics

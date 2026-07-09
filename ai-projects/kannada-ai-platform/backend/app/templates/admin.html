@@ -1,111 +1,212 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <title>Kannada AI Admin</title>
-
     <style>
-
-        body{
-            font-family:Arial;
-            margin:40px;
-            background:#f7f7f7;
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background: #f7f7f7;
         }
 
-        h1{
-            color:#333;
+        h1 {
+            color: #333;
         }
 
-        .draft{
-
-            background:white;
-
-            margin-bottom:15px;
-
-            padding:15px;
-
-            border-radius:8px;
-
-            box-shadow:0 0 4px rgba(0,0,0,.1);
-
+        .draft {
+            background: white;
+            margin-bottom: 20px;
+            padding: 18px;
+            border-radius: 8px;
+            box-shadow: 0 0 4px rgba(0,0,0,.12);
         }
 
-        .question{
-
-            font-size:18px;
-
-            font-weight:bold;
-
-            margin-bottom:10px;
-
+        .question {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
 
-        .status{
-
-            color:green;
-
-            margin-bottom:10px;
-
+        .meta {
+            color: #555;
+            margin-bottom: 12px;
+            font-size: 14px;
         }
 
-        pre{
-
-            white-space:pre-wrap;
-
-            font-family:inherit;
-
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
         }
 
+        input, textarea {
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 6px;
+            padding: 10px;
+            font-size: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        textarea {
+            min-height: 180px;
+            white-space: pre-wrap;
+        }
+
+        .actions {
+            margin-top: 14px;
+        }
+
+        button {
+            padding: 9px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .approve {
+            background: #1f8f4d;
+            color: white;
+        }
+
+        .delete {
+            background: #c0392b;
+            color: white;
+        }
+
+        .message {
+            margin: 15px 0;
+            font-weight: bold;
+        }
     </style>
-
 </head>
 
 <body>
+    <h1>Kannada AI Admin Portal</h1>
+    <p>Review imported drafts, edit the Kannada answer, and approve trusted knowledge.</p>
 
-<h1>Kannada AI Admin Portal</h1>
+    <div id="message" class="message"></div>
+    <div id="drafts"></div>
 
-<div id="drafts"></div>
+    <script>
+        async function loadDrafts() {
+            const response = await fetch("/admin/drafts");
+            const data = await response.json();
 
-<script>
+            let html = "";
 
-async function loadDrafts(){
+            data.drafts
+                .filter(d => d.status === "draft")
+                .forEach(d => {
+                    html += `
+                        <div class="draft" id="draft-${d.id}">
+                            <div class="question">${d.question}</div>
 
-    const response=await fetch("/admin/drafts");
+                            <div class="meta">
+                                ID: ${d.id} |
+                                Status: ${d.status} |
+                                Hits: ${d.hit_count} |
+                                Updated: ${d.updated_at}
+                            </div>
 
-    const data=await response.json();
+                            <label>Approved Question</label>
+                            <input id="question-${d.id}" value="${escapeHtml(d.question)}" />
 
-    let html="";
+                            <label>Approved Answer</label>
+                            <label>Source Evidence / Imported Draft</label>
+                            <textarea readonly>${escapeHtml(d.answer)}</textarea>
 
-    data.drafts.forEach(d=>{
+                            <label>Approved Answer</label>
+                            <textarea id="answer-${d.id}" placeholder="Write clean Kannada answer here. Do not paste Provider, URL, or draft notes."></textarea>
 
-        html+=`
+                            <label>Category</label>
 
-        <div class="draft">
+                            <select id="category-${d.id}">
+                                <option value="history" ${d.category==="history" ? "selected" : ""}>history</option>
+                                <option value="location" ${d.category==="location" ? "selected" : ""}>location</option>
+                                <option value="literature" ${d.category==="literature" ? "selected" : ""}>literature</option>
+                                <option value="culture" ${d.category==="culture" ? "selected" : ""}>culture</option>
+                                <option value="religion" ${d.category==="religion" ? "selected" : ""}>religion</option>
+                                <option value="language" ${d.category==="language" ? "selected" : ""}>language</option>
+                                <option value="grammar" ${d.category==="grammar" ? "selected" : ""}>grammar</option>
+                                <option value="cinema" ${d.category==="cinema" ? "selected" : ""}>cinema</option>
+                                <option value="general" ${d.category==="general" ? "selected" : ""}>general</option>
+                            </select>
+                            <div class="actions">
+                                <button class="approve" onclick="approveDraft(${d.id})">
+                                    Approve
+                                </button>
 
-            <div class="question">${d.question}</div>
+                                <button class="delete" onclick="deleteDraft(${d.id})">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
 
-            <div class="status">
+            document.getElementById("drafts").innerHTML = html || "No pending drafts found.";
+        }
 
-                Status : ${d.status}
+        async function approveDraft(id) {
+            const question = document.getElementById(`question-${id}`).value;
+            const answer = document.getElementById(`answer-${id}`).value;
+            const category = document.getElementById(`category-${id}`).value;
 
-            </div>
+            const response = await fetch(`/admin/drafts/${id}/approve`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    question,
+                    answer,
+                    category,
+                }),
+            });
 
-            <pre>${d.answer}</pre>
+            if (response.ok) {
+                showMessage(`Draft ${id} approved successfully.`);
+                loadDrafts();
+            } else {
+                const errorData = await response.json();
+                showMessage(`Failed to approve draft ${id}: ${errorData.detail}`);
+            }
+        }
 
-        </div>
+        async function deleteDraft(id) {
+            if (!confirm("Delete this draft?")) {
+                return;
+            }
 
-        `;
+            const response = await fetch(`/admin/drafts/${id}`, {
+                method: "DELETE",
+            });
 
-    });
+            if (response.ok) {
+                showMessage(`Draft ${id} deleted.`);
+                loadDrafts();
+            } else {
+                showMessage(`Failed to delete draft ${id}.`);
+            }
+        }
 
-    document.getElementById("drafts").innerHTML=html;
+        function showMessage(text) {
+            document.getElementById("message").innerText = text;
+        }
 
-}
+        function escapeHtml(value) {
+            return String(value || "")
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
 
-loadDrafts();
-
-</script>
-
+        loadDrafts();
+    </script>
 </body>
-
 </html>

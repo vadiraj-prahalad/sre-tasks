@@ -150,5 +150,43 @@
     "version": 1,
     "created_at": "2026-07-08T18:33:30.016741+00:00",
     "updated_at": "2026-07-08T18:33:30.016741+00:00"
+  },
+  {
+    "id": "206c7ed2-b424-4d3a-a7db-eda787d8adfd",
+    "question": "Kaveri ಬಗ್ಗೆ ಹೇಳಿ",
+    "answer": "ಕಾವೇರಿ ನದಿ ದಕ್ಷಿಣ ಭಾರತದ ಪ್ರಮುಖ ನದಿಗಳಲ್ಲಿ ಒಂದು. ಇದು ಕರ್ನಾಟಕದ ಕೊಡಗು ಜಿಲ್ಲೆಯ ತಲಕಾವೇರಿಯಲ್ಲಿ ಹುಟ್ಟಿ, ಕರ್ನಾಟಕ ಮತ್ತು ತಮಿಳುನಾಡು ರಾಜ್ಯಗಳ ಮೂಲಕ ಹರಿದು ಬಂಗಾಳ ಕೊಲ್ಲಿಯಲ್ಲಿ ಸೇರುತ್ತದೆ. ಕಾವೇರಿ ನದಿ ಕೃಷಿ, ಕುಡಿಯುವ ನೀರು ಮತ್ತು ಸಾಂಸ್ಕೃತಿಕ ಮಹತ್ವಕ್ಕಾಗಿ ಪ್ರಸಿದ್ಧವಾಗಿದೆ.",
+    "aliases": [],
+    "category": "location",
+    "subcategory": "",
+    "related_topics": [],
+    "difficulty": "basic",
+    "status": "published",
+    "source": "human_reviewed_draft",
+    "source_urls": [],
+    "language": "kn",
+    "reviewed_by": "admin",
+    "reviewed_at": "2026-07-08T23:14:39.806450+00:00",
+    "version": 1,
+    "created_at": "2026-07-08T23:14:39.806450+00:00",
+    "updated_at": "2026-07-08T23:14:39.806450+00:00"
+  },
+  {
+    "id": "54c9dc6d-33f0-4ffa-863d-7b072d132fa6",
+    "question": "Krishna River ಬಗ್ಗೆ ಹೇಳಿ",
+    "answer": "ಕೃಷ್ಣಾ ನದಿ ದಕ್ಷಿಣ ಭಾರತದ ಪ್ರಮುಖ ನದಿಗಳಲ್ಲಿ ಒಂದು. ಇದು ಮಹಾರಾಷ್ಟ್ರದಲ್ಲಿ ಹುಟ್ಟಿ, ಕರ್ನಾಟಕ, ತೆಲಂಗಾಣ ಮತ್ತು ಆಂಧ್ರ ಪ್ರದೇಶಗಳ ಮೂಲಕ ಹರಿಯುತ್ತದೆ. ಕೃಷ್ಣಾ ನದಿ ನೀರಾವರಿ, ಕೃಷಿ ಮತ್ತು ಅನೇಕ ಅಣೆಕಟ್ಟುಗಳ ಕಾರಣದಿಂದ ದಕ್ಷಿಣ ಭಾರತದ ಜೀವನದಲ್ಲಿ ಮಹತ್ವದ ಪಾತ್ರ ವಹಿಸುತ್ತದೆ.",
+    "aliases": [],
+    "category": "history",
+    "subcategory": "",
+    "related_topics": [],
+    "difficulty": "basic",
+    "status": "published",
+    "source": "human_reviewed_draft",
+    "source_urls": [],
+    "language": "kn",
+    "reviewed_by": "admin",
+    "reviewed_at": "2026-07-08T23:14:58.883787+00:00",
+    "version": 1,
+    "created_at": "2026-07-08T23:14:58.883787+00:00",
+    "updated_at": "2026-07-08T23:14:58.883787+00:00"
   }
 ]

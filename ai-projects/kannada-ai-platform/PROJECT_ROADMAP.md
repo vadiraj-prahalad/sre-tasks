@@ -106,3 +106,44 @@ Next
 - Bulk Import (1000 Topics)
 - Beta UI Polish
 - Feedback Analytics
+
+---
+
+# Phase 4.3 Completed
+
+## Trusted Editorial Knowledge Acquisition
+
+### Completed
+
+✓ Entity Resolution
+
+✓ Canonical Alias Mapping
+
+✓ Wikipedia Metadata
+
+✓ Exact Wikidata Lookup
+
+✓ Evidence Builder
+
+✓ Evidence Quality Service
+
+✓ Evidence Conflict Detection
+
+✓ GPT-5.5 Editorial Generation
+
+✓ Human Draft Queue
+
+---
+
+# Current Phase
+
+## Phase 4.4 — Editorial Validation & Publishing
+
+### Goals
+
+- Editorial Review Workflow
+- Approve / Reject Pipeline
+- Publish to Knowledge Base
+- Automatic Embedding Generation
+- Knowledge Version History
+- Incremental Refresh

@@ -46,3 +46,35 @@
 - GPT reasoning token issue
 - Mixed-script response handling
 - Editorial fallback logic
+
+## 2026-07-10
+
+### Added
+
+- Entity Resolution Service
+- Entity Alias JSON
+- Evidence Builder Service
+- Evidence Quality Service
+- Evidence Conflict Detection Service
+- Exact Wikidata lookup using Wikipedia Q-ID
+- Wikipedia metadata support
+- Editorial evidence warnings
+- Canonical entity normalization
+
+### Improved
+
+- Editorial prompt quality
+- Multi-provider evidence collection
+- Wikipedia + Wikidata integration
+- Source selection accuracy
+- Draft article consistency
+- Human review information
+
+### Fixed
+
+- Incorrect Wikidata entity matching
+- Duplicate alias handling
+- Wrong entity selected from fuzzy search
+- Missing metadata support
+- Editorial year conflicts
+- Provider normalization

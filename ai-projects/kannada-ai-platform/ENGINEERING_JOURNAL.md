@@ -94,3 +94,49 @@ Why prompt engineering matters.
 Why not generate knowledge at runtime?
 
 How do you control AI costs?
+
+---
+
+# Day 3 — Trusted Editorial Knowledge Acquisition
+
+## Goal
+
+Transform the editorial importer into a reliable, modular knowledge acquisition pipeline.
+
+## Completed
+
+- Entity Resolution Service
+- Canonical alias mapping
+- Wikipedia metadata extraction
+- Exact Wikidata lookup using Wikipedia Q-ID
+- Evidence Builder
+- Evidence Quality Service
+- Evidence Conflict Detection
+- Editorial warnings
+- Modular editorial architecture
+
+## Major Learnings
+
+- Exact identifiers are more reliable than text search.
+- Metadata is valuable beyond summaries.
+- Editorial AI should receive validated evidence.
+- Evidence validation improves trustworthiness.
+
+## Challenges
+
+- Wikidata fuzzy search selected incorrect entities.
+- Conflicting years between providers.
+- Kannada Wikipedia coverage was inconsistent.
+- Evidence normalization across providers.
+
+## Next Goal
+
+Phase 4.4 — Editorial Validation & Publishing
+
+## Interview Questions
+
+- Why use canonical entity resolution?
+- Why separate evidence collection from prompting?
+- Why detect evidence conflicts?
+- Why prefer exact Wikidata lookup?
+- Why normalize provider output?

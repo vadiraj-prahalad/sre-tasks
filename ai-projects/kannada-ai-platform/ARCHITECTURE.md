@@ -98,3 +98,100 @@ Next
 - Production Deployment
 ````
 
+---
+
+# Architecture Update — 2026-07-10 (Version Beta 0.5)
+
+## Trusted Editorial Knowledge Acquisition Pipeline
+
+The editorial pipeline evolved from a simple Wikipedia importer into a modular knowledge acquisition architecture.
+
+```text
+User Topic
+      │
+      ▼
+Entity Resolver
+      │
+      ▼
+Internet Knowledge Collection
+      ├───────────────┬──────────────┐
+      ▼               ▼              ▼
+Kannada Wikipedia  English Wikipedia  Wikidata
+      │               │               │
+      └───────────────┴───────────────┘
+                      │
+                      ▼
+          Evidence Quality Service
+                      │
+                      ▼
+            Evidence Builder Service
+                      │
+                      ▼
+         Evidence Conflict Detection
+                      │
+                      ▼
+      Editorial Prompt Builder (GPT-5.5)
+                      │
+                      ▼
+         Human Editorial Draft Queue
+                      │
+                      ▼
+      Future Publishing Pipeline
+```
+
+## Overall Platform Architecture
+
+```text
+React UI
+    │
+FastAPI
+    │
+Router
+    │
+────────────────────────────────────────────
+│ Runtime AI           Editorial AI        │
+│                                          │
+│  RAG                 Entity Resolution   │
+│  Retriever           Evidence Builder    │
+│  Ollama              Conflict Detection  │
+│                      GPT-5.5 Editorial   │
+────────────────────────────────────────────
+            │
+            ▼
+SQLite Knowledge Base
+            │
+Embeddings
+            │
+Runtime Answers
+```
+
+## Python Execution Flow
+
+```text
+manage.py
+      │
+      ▼
+import_topic_as_draft()
+      │
+resolve_entity()
+      │
+collect_topic_evidence()
+      │
+Wikipedia / Kannada Wikipedia / Wikidata
+      │
+successful_sources()
+      │
+select_clean_evidence()
+      │
+build_evidence()
+      │
+analyze_evidence_conflicts()
+      │
+generate_editorial_draft()
+      │
+save_draft_answer()
+```
+
+### Version
+
+Current Version: **Beta 0.5**

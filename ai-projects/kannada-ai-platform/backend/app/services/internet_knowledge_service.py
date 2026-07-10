@@ -4,6 +4,10 @@ from app.services.draft_knowledge_service import save_draft_answer
 from app.services.editorial_draft_service import generate_editorial_draft
 from app.services.entity_resolution_service import resolve_entity
 from app.services.evidence_builder_service import build_evidence
+from app.services.evidence_conflict_service import (
+    analyze_evidence_conflicts,
+    build_conflict_instructions,
+)
 from app.services.evidence_quality_service import select_clean_evidence
 from app.services.internet_providers.kannada_wikipedia_provider import (
     KannadaWikipediaProvider,
@@ -12,23 +16,39 @@ from app.services.internet_providers.wikidata_provider import WikidataProvider
 from app.services.internet_providers.wikipedia_provider import WikipediaProvider
 
 
-PROVIDERS = [
-    KannadaWikipediaProvider(),
-    WikipediaProvider(),
-    WikidataProvider(),
-]
-
-
 def collect_topic_evidence(topic: str) -> list[dict[str, Any]]:
     """
-    Fetch raw evidence for the resolved topic from every configured provider.
+    Collect evidence in a controlled order.
+
+    Flow:
+    1. Try Kannada Wikipedia.
+    2. Resolve the topic through English Wikipedia.
+    3. If Wikipedia supplies a Wikidata Q-ID, fetch that exact entity.
+    4. Use fuzzy Wikidata search only as a fallback.
     """
 
-    evidence = []
+    evidence: list[dict[str, Any]] = []
 
-    for provider in PROVIDERS:
-        result = provider.fetch(topic)
-        evidence.append(result)
+    kannada_result = KannadaWikipediaProvider().fetch(topic)
+    evidence.append(kannada_result)
+
+    wikipedia_result = WikipediaProvider().fetch(topic)
+    evidence.append(wikipedia_result)
+
+    wikidata_provider = WikidataProvider()
+
+    wikipedia_metadata = wikipedia_result.get("metadata") or {}
+    wikibase_item = wikipedia_metadata.get("wikibase_item")
+
+    if wikipedia_result.get("status") == "success" and wikibase_item:
+        wikidata_result = wikidata_provider.fetch_by_id(
+            entity_id=wikibase_item,
+            topic=topic,
+        )
+    else:
+        wikidata_result = wikidata_provider.fetch(topic)
+
+    evidence.append(wikidata_result)
 
     return evidence
 
@@ -37,7 +57,7 @@ def successful_sources(
     evidence: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """
-    Keep only providers that returned usable results.
+    Retain only provider responses that completed successfully.
     """
 
     return [
@@ -49,25 +69,64 @@ def successful_sources(
 
 def build_kannada_draft_question(topic: str) -> str:
     """
-    Build the question shown in the admin draft-review queue.
+    Build the question displayed in the admin draft queue.
     """
 
     return f"{topic} ಬಗ್ಗೆ ಹೇಳಿ"
+
+
+def format_metadata(metadata: dict[str, Any]) -> list[str]:
+    """
+    Convert useful evidence metadata into readable lines.
+
+    Noisy metadata is already removed by evidence_conflict_service.
+    """
+
+    if not metadata:
+        return []
+
+    labels = {
+        "description": "Description",
+        "page_type": "Page type",
+        "coordinates": "Coordinates",
+        "wikibase_item": "Wikidata ID",
+        "canonical_title": "Canonical title",
+        "normalized_title": "Normalized title",
+        "entity_id": "Entity ID",
+        "lookup_method": "Lookup method",
+        "english_label": "English label",
+        "kannada_label": "Kannada label",
+        "english_description": "English description",
+        "kannada_description": "Kannada description",
+        "english_aliases": "English aliases",
+        "kannada_aliases": "Kannada aliases",
+    }
+
+    lines: list[str] = []
+
+    for key, value in metadata.items():
+        if value in (None, "", [], {}):
+            continue
+
+        label = labels.get(key, key.replace("_", " ").title())
+        lines.append(f"{label}: {value}")
+
+    return lines
 
 
 def build_evidence_text(
     sources: list[dict[str, Any]],
 ) -> str:
     """
-    Convert normalized evidence into text for the editorial prompt
-    and the admin review screen.
+    Convert normalized, cleaned evidence into text for:
+
+    - the editorial prompt
+    - the admin review screen
     """
 
-    sections = []
+    sections: list[str] = []
 
     for index, source in enumerate(sources, start=1):
-        metadata = source.get("metadata") or {}
-
         lines = [
             f"{index}. Provider: {source.get('provider', 'Unknown')}",
             f"Trust: {source.get('trust_level', 'unknown')}",
@@ -76,8 +135,15 @@ def build_evidence_text(
             f"URL: {source.get('url', '')}",
         ]
 
-        if metadata:
-            lines.append(f"Metadata: {metadata}")
+        metadata = source.get("metadata") or {}
+        metadata_lines = format_metadata(metadata)
+
+        if metadata_lines:
+            lines.append("Metadata:")
+            lines.extend(
+                f"- {metadata_line}"
+                for metadata_line in metadata_lines
+            )
 
         sections.append("\n".join(lines))
 
@@ -88,10 +154,11 @@ def build_review_draft_answer(
     topic: str,
     category: str,
     sources: list[dict[str, Any]],
+    conflict_instructions: str = "",
 ) -> str:
     """
-    Generate the Kannada editorial draft and combine it with
-    the supporting evidence for human review.
+    Generate the Kannada article and combine it with supporting
+    evidence and conflict warnings for human review.
     """
 
     evidence_text = build_evidence_text(sources)
@@ -100,6 +167,7 @@ def build_review_draft_answer(
         topic=topic,
         category=category,
         evidence_text=evidence_text,
+        conflict_instructions=conflict_instructions,
     )
 
     if not generated_draft:
@@ -109,15 +177,25 @@ def build_review_draft_answer(
             "ಮಾನವ ಪರಿಶೀಲಿತ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ."
         )
 
+    warning_section = ""
+
+    if conflict_instructions:
+        warning_section = (
+            "\n\nಸಾಕ್ಷ್ಯ ಪರಿಶೀಲನಾ ಎಚ್ಚರಿಕೆಗಳು:\n\n"
+            f"{conflict_instructions}"
+        )
+
     return (
         "AI ಕನ್ನಡ ಕರಡು:\n\n"
         f"{generated_draft}\n\n"
         "ಸಂಗ್ರಹಿಸಿದ ಮೂಲಗಳು:\n\n"
-        f"{evidence_text}\n\n"
+        f"{evidence_text}"
+        f"{warning_section}\n\n"
         "ಗಮನಿಸಿ:\n"
         "1. ಈ ಕರಡು ಇನ್ನೂ ಪರಿಶೀಲಿತ ಉತ್ತರವಲ್ಲ.\n"
         "2. ಮಾನವ ಪರಿಶೀಲನೆಯ ನಂತರ ಮಾತ್ರ ಪ್ರಕಟಿಸಬೇಕು.\n"
-        "3. ತಪ್ಪು ಅಥವಾ ಅಸಹಜ ಕನ್ನಡ ಕಂಡುಬಂದರೆ ಸಂಪಾದಿಸಿ ಪ್ರಕಟಿಸಬೇಕು."
+        "3. ತಪ್ಪು ಅಥವಾ ಅಸಹಜ ಕನ್ನಡ ಕಂಡುಬಂದರೆ ಸಂಪಾದಿಸಿ ಪ್ರಕಟಿಸಬೇಕು.\n"
+        "4. ಸಾಕ್ಷ್ಯಗಳಲ್ಲಿ ಭಿನ್ನ ಮಾಹಿತಿ ಇದ್ದರೆ ಪರಿಶೀಲಿಸದೆ ಪ್ರಕಟಿಸಬಾರದು."
     )
 
 
@@ -126,15 +204,18 @@ def import_topic_as_draft(
     category: str = "general",
 ) -> dict[str, Any]:
     """
-    Full knowledge-acquisition flow:
+    Execute the complete knowledge-acquisition pipeline.
 
-    1. Resolve the input into a canonical entity.
-    2. Collect evidence from configured providers.
-    3. Keep successful provider responses.
-    4. Reject ambiguous, irrelevant, or conflicting evidence.
-    5. Normalize accepted evidence into a common format.
-    6. Generate a Kannada editorial draft.
-    7. Save the result in the admin draft queue.
+    Flow:
+    1. Resolve the original topic into a canonical entity.
+    2. Collect raw evidence from providers.
+    3. Retain successful provider results.
+    4. Remove ambiguous or unrelated sources.
+    5. Normalize accepted evidence.
+    6. Clean metadata and detect evidence conflicts.
+    7. Block generation when different entities are detected.
+    8. Generate a Kannada editorial draft.
+    9. Save the draft for human approval.
     """
 
     entity = resolve_entity(topic, category)
@@ -149,10 +230,21 @@ def import_topic_as_draft(
         successful_evidence,
     )
 
-    sources = [
+    normalized_sources = [
         build_evidence(source)
         for source in clean_sources
     ]
+
+    conflict_result = analyze_evidence_conflicts(
+        normalized_sources
+    )
+
+    sources = conflict_result["sources"]
+    warnings = conflict_result["warnings"]
+
+    conflict_instructions = build_conflict_instructions(
+        warnings
+    )
 
     if not sources:
         return {
@@ -160,9 +252,33 @@ def import_topic_as_draft(
             "topic": topic,
             "original_topic": topic,
             "resolved_topic": resolved_topic,
+            "entity_changed": entity.get("changed", False),
             "category": category,
             "evidence": raw_evidence,
+            "evidence_warnings": warnings,
             "message": "No relevant and trustworthy sources found.",
+        }
+
+    # Different entity IDs indicate that the evidence may refer to
+    # different real-world entities. Do not spend OpenAI tokens or
+    # create a draft until this is manually resolved.
+    if conflict_result["blocking_conflict"]:
+        return {
+            "status": "blocked_conflict",
+            "topic": topic,
+            "original_topic": topic,
+            "resolved_topic": resolved_topic,
+            "entity_changed": entity.get("changed", False),
+            "category": category,
+            "successful_sources": len(sources),
+            "total_sources_checked": len(raw_evidence),
+            "evidence_warnings": warnings,
+            "has_evidence_conflicts": True,
+            "blocking_conflict": True,
+            "message": (
+                "Evidence refers to conflicting entities. "
+                "Draft generation was blocked."
+            ),
         }
 
     best_title = sources[0].get("title") or resolved_topic
@@ -173,6 +289,7 @@ def import_topic_as_draft(
         topic=best_title,
         category=category,
         sources=sources,
+        conflict_instructions=conflict_instructions,
     )
 
     draft_result = save_draft_answer(
@@ -190,6 +307,9 @@ def import_topic_as_draft(
         "category": category,
         "successful_sources": len(sources),
         "total_sources_checked": len(raw_evidence),
+        "has_evidence_conflicts": conflict_result["has_conflicts"],
+        "blocking_conflict": conflict_result["blocking_conflict"],
+        "evidence_warnings": warnings,
         "sources": [
             {
                 "provider": source.get("provider"),

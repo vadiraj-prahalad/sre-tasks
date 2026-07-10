@@ -56,7 +56,18 @@ class KannadaWikipediaProvider:
             "topic": topic,
             "title": data.get("title", topic),
             "summary": summary,
-            "url": data.get("content_urls", {})
-            .get("desktop", {})
-            .get("page", url),
+            "url": (
+                data.get("content_urls", {})
+                .get("desktop", {})
+                .get("page", url)
+            ),
+            "metadata": {
+                "description": data.get("description"),
+                "page_type": data.get("type"),
+                "coordinates": data.get("coordinates"),
+                "wikibase_item": data.get("wikibase_item"),
+                "canonical_title": data.get("titles", {}).get("canonical"),
+                "normalized_title": data.get("titles", {}).get("normalized"),
+                "display_title": data.get("titles", {}).get("display"),
+            },
         }

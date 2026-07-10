@@ -10,12 +10,15 @@ def build_editorial_prompt(
     topic: str,
     category: str,
     evidence_text: str,
+    conflict_instructions: str = "",
 ) -> str:
     archetype = get_archetype(category)
     archetype_rules = ARCHETYPE_RULES.get(
         archetype,
         ARCHETYPE_RULES["GENERAL"],
     )
+
+    warning_text = conflict_instructions or "None"
 
     return f"""
 You are a senior Kannada encyclopedia editor.
@@ -44,6 +47,16 @@ Category:
 Editorial Archetype:
 {archetype}
 
+Evidence warnings:
+{warning_text}
+
+Rules for evidence warnings:
+- If years conflict, omit uncertain dates.
+- If entity IDs conflict, do not generate an article.
+- If belief wording is detected, preserve cautious wording.
+- Do not choose one disputed value merely because one source has higher trust.
+- Prefer omission over publishing an unresolved contradiction.
+
 Evidence:
 {evidence_text}
 
@@ -51,9 +64,10 @@ Before writing the final answer, internally verify:
 - The answer is only in Kannada.
 - There are no mixed-script words.
 - There are no broken Kannada words.
-- The tone is neutral, clear and non-dramatic.
+- The tone is neutral, clear, and non-dramatic.
 - The article follows the selected archetype structure.
 - No unsupported facts are added.
+- Conflicting facts are omitted.
 - The answer reads like a Kannada encyclopedia or school reference book.
 
 Return only the final Kannada article.

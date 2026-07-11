@@ -101,3 +101,18 @@ Each service performs one job:
 - Builder normalizes.
 - Conflict detector validates.
 - Editorial AI writes.
+
+# Session Notes — 2026-07-11
+
+## New Engineering Principle
+
+Do not continue solving quality problems by adding corrective layers after they appear.
+
+Instead,
+
+1. Improve the underlying domain model.
+2. Improve evidence quality.
+3. Improve canonical entity resolution.
+4. Improve editorial generation.
+
+The prompt should become simpler as the knowledge model becomes richer.

@@ -77,3 +77,16 @@ This architecture enables:
 - Provider independence
 ````
 
+## Recent Progress (2026-07-11)
+
+The platform has entered the Canonical Knowledge Model phase.
+
+Recent improvements include:
+
+- KnowledgeEntity domain model
+- Improved editorial prompting
+- Publication-quality Kannada rules
+- Editorial review checklist
+- Better textbook-style Kannada generation
+
+Current focus is improving the semantic quality of the knowledge pipeline before scaling to 1,000+ curated Kannada topics.

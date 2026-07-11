@@ -147,3 +147,27 @@ Next
 - Automatic Embedding Generation
 - Knowledge Version History
 - Incremental Refresh
+
+## Phase 5 — Canonical Knowledge Model
+
+Status
+
+In Progress
+
+Completed
+
+✅ KnowledgeEntity model
+
+✅ Entity Resolver returns KnowledgeEntity
+
+Next
+
+⬜ Canonical English title
+
+⬜ Wikidata ID
+
+⬜ Canonical Kannada title
+
+⬜ Entity Type
+
+⬜ Replace remaining string-based pipeline

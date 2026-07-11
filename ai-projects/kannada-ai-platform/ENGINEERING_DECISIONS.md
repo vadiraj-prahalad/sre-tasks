@@ -145,3 +145,24 @@ Each service performs one job:
 - Builder normalizes.
 - Conflict detector validates.
 - Editorial AI writes.
+
+# Decision — Canonical Knowledge Model
+
+Date:
+2026-07-11
+
+Decision:
+
+The system will migrate from passing primitive strings between services to passing a KnowledgeEntity object.
+
+Reason:
+
+- Reduces duplicated logic.
+- Centralizes canonical identity.
+- Simplifies prompt generation.
+- Improves retrieval.
+- Simplifies future multilingual support.
+- Better scalability.
+
+Status:
+Approved

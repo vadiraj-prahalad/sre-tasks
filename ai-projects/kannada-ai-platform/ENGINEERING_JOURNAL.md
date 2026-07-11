@@ -140,3 +140,22 @@ Phase 4.4 — Editorial Validation & Publishing
 - Why detect evidence conflicts?
 - Why prefer exact Wikidata lookup?
 - Why normalize provider output?
+
+# Engineering Journal
+
+## 2026-07-11
+
+Today's work focused less on features and more on long-term architecture.
+
+Major accomplishments:
+
+- Editorial language quality improved.
+- Publication-quality style guide expanded.
+- Editorial checklist introduced.
+- KnowledgeEntity model introduced.
+- Entity Resolution migrated to KnowledgeEntity.
+
+Most important lesson:
+
+Prompt engineering alone cannot solve language quality.
+A better knowledge model produces better prompts automatically.

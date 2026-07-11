@@ -78,3 +78,25 @@
 - Missing metadata support
 - Editorial year conflicts
 - Provider normalization
+
+
+## 2026-07-11
+
+### Added
+
+- Introduced KnowledgeEntity domain model.
+- Entity Resolver now returns KnowledgeEntity instead of dictionary.
+- Added Editorial Evaluation Checklist.
+- Expanded Kannada Language Rules.
+- Expanded Kannada Editorial Style Examples.
+
+### Improved
+
+- Editorial prompt quality.
+- Natural Kannada generation.
+- Publication-quality editorial guidance.
+- Human review workflow.
+
+### Architecture
+
+- Began migration towards Canonical Knowledge Model.

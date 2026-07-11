@@ -108,3 +108,25 @@ The AI should avoid presenting uncertain facts as absolute truth.
 ### Why Metadata?
 
 Metadata enables richer validation and future features like images, coordinates and infoboxes.
+
+## 2026-07-11
+
+Question
+
+Why introduce a KnowledgeEntity model?
+
+Answer
+
+Knowledge systems should pass semantic objects rather than raw strings.
+A KnowledgeEntity encapsulates identity, aliases, canonical names, entity type, confidence and metadata, allowing every downstream component to consume consistent information.
+
+Design Pattern
+
+Rich Domain Model
+
+Benefits
+
+- Less duplication
+- Better maintainability
+- Easier testing
+- Future extensibility

@@ -195,3 +195,41 @@ save_draft_answer()
 ### Version
 
 Current Version: **Beta 0.5**
+
+---
+
+# 2026-07-11 — Architecture Evolution
+
+## Major Architectural Decision
+
+The project officially begins transitioning from a **string-driven knowledge pipeline** to a **Canonical Knowledge Model**.
+
+Old Flow
+
+User Query
+    ↓
+Resolved Topic (string)
+    ↓
+Evidence Collection
+    ↓
+Editorial Prompt
+    ↓
+LLM
+
+New Target Flow
+
+User Query
+    ↓
+Entity Resolution
+    ↓
+KnowledgeEntity
+    ↓
+Evidence Collection
+    ↓
+Editorial AI
+    ↓
+Human Review
+    ↓
+Published Knowledge
+
+KnowledgeEntity will become the single source of truth throughout the platform.

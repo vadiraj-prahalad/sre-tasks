@@ -155,10 +155,13 @@ def build_review_draft_answer(
     category: str,
     sources: list[dict[str, Any]],
     conflict_instructions: str = "",
-) -> str:
+) -> dict[str, str]:
     """
-    Generate the Kannada article and combine it with supporting
-    evidence and conflict warnings for human review.
+    Generate structured editorial content for human review.
+
+    The returned values keep the AI-generated Kannada answer,
+    supporting evidence, editorial warnings, and legacy combined
+    review text separate.
     """
 
     evidence_text = build_evidence_text(sources)
@@ -177,15 +180,17 @@ def build_review_draft_answer(
             "ಮಾನವ ಪರಿಶೀಲಿತ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ."
         )
 
+    clean_conflict_instructions = conflict_instructions.strip()
+
     warning_section = ""
 
-    if conflict_instructions:
+    if clean_conflict_instructions:
         warning_section = (
             "\n\nಸಾಕ್ಷ್ಯ ಪರಿಶೀಲನಾ ಎಚ್ಚರಿಕೆಗಳು:\n\n"
-            f"{conflict_instructions}"
+            f"{clean_conflict_instructions}"
         )
 
-    return (
+    combined_review_text = (
         "AI ಕನ್ನಡ ಕರಡು:\n\n"
         f"{generated_draft}\n\n"
         "ಸಂಗ್ರಹಿಸಿದ ಮೂಲಗಳು:\n\n"
@@ -197,6 +202,13 @@ def build_review_draft_answer(
         "3. ತಪ್ಪು ಅಥವಾ ಅಸಹಜ ಕನ್ನಡ ಕಂಡುಬಂದರೆ ಸಂಪಾದಿಸಿ ಪ್ರಕಟಿಸಬೇಕು.\n"
         "4. ಸಾಕ್ಷ್ಯಗಳಲ್ಲಿ ಭಿನ್ನ ಮಾಹಿತಿ ಇದ್ದರೆ ಪರಿಶೀಲಿಸದೆ ಪ್ರಕಟಿಸಬಾರದು."
     )
+
+    return {
+        "suggested_answer": generated_draft.strip(),
+        "evidence": evidence_text.strip(),
+        "editorial_warnings": clean_conflict_instructions,
+        "combined_review_text": combined_review_text,
+    }
 
 
 def import_topic_as_draft(
@@ -285,7 +297,7 @@ def import_topic_as_draft(
 
     question = build_kannada_draft_question(best_title)
 
-    answer = build_review_draft_answer(
+    review_content = build_review_draft_answer(
         topic=best_title,
         category=category,
         sources=sources,
@@ -294,7 +306,12 @@ def import_topic_as_draft(
 
     draft_result = save_draft_answer(
         question,
-        answer,
+        review_content["combined_review_text"],
+        suggested_answer=review_content["suggested_answer"],
+        evidence=review_content["evidence"],
+        editorial_warnings=review_content["editorial_warnings"],
+        category=category,
+        draft_type="editorial_import",
     )
 
     return {

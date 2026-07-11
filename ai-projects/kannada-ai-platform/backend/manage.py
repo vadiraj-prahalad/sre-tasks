@@ -6,8 +6,8 @@ from app.db.tools.generate_chunk_embeddings import generate_chunk_embeddings
 from app.db.tools.ingest_all_sources import ingest_all_sources
 from app.db.tools.list_documents import main as list_documents
 from app.db.tools.sync_standardized_articles import sync_standardized_articles
+from app.services.bulk_topic_import_service import import_topics_from_file
 from app.services.draft_knowledge_service import (
-    approve_draft_answer,
     delete_draft_answer,
     list_draft_answers,
 )
@@ -16,7 +16,6 @@ from app.services.feedback_dashboard_service import get_feedback_dashboard
 from app.services.internet_knowledge_service import import_topic_as_draft
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
-from app.services.bulk_topic_import_service import import_topics_from_file
 
 
 def print_usage() -> None:
@@ -31,12 +30,11 @@ def print_usage() -> None:
     print("  refresh                                   Refresh knowledge, reload SQLite, embed, and evaluate")
     print("  drafts                                    Show draft knowledge review queue")
     print("  delete-draft <id>                         Delete a bad draft answer")
-    print('  approve-draft <id> "<question>" "<answer>" "<category>"')
-    print("                                            Approve draft into admin knowledge")
+    print("  approve-draft                             Disabled; use Admin Portal")
     print("  import-topic <topic> <category>           Import internet topic into draft queue")
     print("  rewrite-draft <draft_id>                  Rewrite draft into clean Kannada")
     print("  feedback                                  Show feedback dashboard")
-    print("  import-topics-file <file> <category>     Import many topics into draft queue")
+    print("  import-topics-file <file> <category>      Import many topics into draft queue")
 
 
 def show_drafts() -> None:
@@ -52,11 +50,13 @@ def show_drafts() -> None:
     for draft in drafts:
         print(f"ID        : {draft['id']}")
         print(f"Question  : {draft['question']}")
+        print(f"Type      : {draft.get('draft_type', 'legacy')}")
+        print(f"Category  : {draft.get('category', 'general')}")
         print(f"Status    : {draft['status']}")
         print(f"Hit Count : {draft['hit_count']}")
         print(f"Updated   : {draft['updated_at']}")
         print("Answer:")
-        print(draft["answer"])
+        print(draft.get("suggested_answer") or draft["answer"])
         print("-" * 80)
 
 
@@ -154,32 +154,11 @@ def delete_draft_command() -> None:
 
 
 def approve_draft_command() -> None:
-    if len(sys.argv) < 6:
-        print('Usage: python manage.py approve-draft <id> "<question>" "<answer>" "<category>"')
-        raise SystemExit(1)
-
-    draft_id = int(sys.argv[2])
-    approved_question = sys.argv[3]
-    approved_answer = sys.argv[4]
-    category = sys.argv[5]
-
-    result = approve_draft_answer(
-        draft_id=draft_id,
-        approved_question=approved_question,
-        approved_answer=approved_answer,
-        category=category,
+    print(
+        "CLI draft approval is disabled. "
+        "Use the Admin Portal so validation, publishing, embeddings, "
+        "evaluation, and rollback all run through the failure-safe pipeline."
     )
-
-    if result["status"] == "approved":
-        print(f"Approved draft ID: {draft_id}")
-        print(f"Question: {result['question']}")
-        print(f"Category: {result['category']}")
-        print("")
-        print("Article added to admin_articles.json")
-        print("Next step: run python manage.py refresh")
-    else:
-        print(f"Draft not found or already approved: {draft_id}")
-        raise SystemExit(1)
 
 
 def import_topic(topic: str, category: str) -> None:
@@ -201,6 +180,7 @@ def rewrite_draft(draft_id: int) -> None:
     for key, value in result.items():
         print(f"{key}: {value}")
 
+
 def import_topics_file(topic_file: str, category: str) -> None:
     result = import_topics_from_file(topic_file, category)
 
@@ -214,7 +194,7 @@ def import_topics_file(topic_file: str, category: str) -> None:
     print("")
 
     for item in result["results"]:
-        print(f"{item.get('topic')} -> {item.get('status')}")        
+        print(f"{item.get('topic')} -> {item.get('status')}")
 
 
 def main() -> None:
@@ -250,32 +230,30 @@ def main() -> None:
     elif command == "import-topic":
         if len(sys.argv) < 3:
             print("Usage: python manage.py import-topic <topic> <category>")
-            return
+            raise SystemExit(1)
 
         topic = sys.argv[2]
         category = sys.argv[3] if len(sys.argv) > 3 else "general"
-
         import_topic(topic, category)
     elif command == "rewrite-draft":
         if len(sys.argv) < 3:
             print("Usage: python manage.py rewrite-draft <draft_id>")
-            return
+            raise SystemExit(1)
 
         rewrite_draft(int(sys.argv[2]))
     elif command == "import-topics-file":
         if len(sys.argv) < 3:
             print("Usage: python manage.py import-topics-file <file> <category>")
-            return
+            raise SystemExit(1)
 
         topic_file = sys.argv[2]
         category = sys.argv[3] if len(sys.argv) > 3 else "general"
-
-        import_topics_file(topic_file, category)    
+        import_topics_file(topic_file, category)
     else:
         print(f"Unknown command: {command}")
         print_usage()
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
     main()
-

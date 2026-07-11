@@ -18,7 +18,7 @@
             margin-bottom: 20px;
             padding: 18px;
             border-radius: 8px;
-            box-shadow: 0 0 4px rgba(0,0,0,.12);
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.12);
         }
 
         .question {
@@ -39,7 +39,9 @@
             font-weight: bold;
         }
 
-        input, textarea {
+        input,
+        textarea,
+        select {
             width: 100%;
             box-sizing: border-box;
             margin-top: 6px;
@@ -64,6 +66,11 @@
             border-radius: 6px;
             cursor: pointer;
             margin-right: 8px;
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
         }
 
         .approve {
@@ -92,87 +99,162 @@
 
     <script>
         async function loadDrafts() {
-            const response = await fetch("/admin/drafts");
-            const data = await response.json();
+            try {
+                const response = await fetch("/admin/drafts");
+                const data = await response.json();
 
-            let html = "";
+                if (!response.ok) {
+                    throw new Error(
+                        data.detail || `Unable to load drafts. Status: ${response.status}`
+                    );
+                }
 
-            data.drafts
-                .filter(d => d.status === "draft")
-                .forEach(d => {
-                    html += `
-                        <div class="draft" id="draft-${d.id}">
-                            <div class="question">${d.question}</div>
+                let html = "";
 
-                            <div class="meta">
-                                ID: ${d.id} |
-                                Status: ${d.status} |
-                                Hits: ${d.hit_count} |
-                                Updated: ${d.updated_at}
+                data.drafts
+                    .filter(d => d.status === "draft")
+                    .forEach(d => {
+                        html += `
+                            <div class="draft" id="draft-${d.id}">
+                                <div class="question">${escapeHtml(d.question)}</div>
+
+                                <div class="meta">
+                                    ID: ${d.id} |
+                                    Type: ${escapeHtml(d.draft_type || "legacy")} |
+                                    Status: ${escapeHtml(d.status)} |
+                                    Hits: ${d.hit_count} |
+                                    Updated: ${escapeHtml(d.updated_at)}
+                                </div>
+
+                                <label>Approved Question</label>
+                                <input
+                                    id="question-${d.id}"
+                                    value="${escapeHtml(d.question)}"
+                                />
+
+                                <label>Source Evidence</label>
+                                <textarea readonly>${escapeHtml(d.evidence || d.answer || "")}</textarea>
+
+                                ${
+                                    d.editorial_warnings
+                                        ? `
+                                            <label>Editorial Warnings</label>
+                                            <textarea readonly>${escapeHtml(d.editorial_warnings)}</textarea>
+                                        `
+                                        : ""
+                                }
+
+                                <label>Suggested Kannada Answer — Review Before Approval</label>
+                                <textarea
+                                    id="answer-${d.id}"
+                                    placeholder="Review and edit the suggested Kannada answer before publishing."
+                                >${escapeHtml(d.suggested_answer || "")}</textarea>
+
+                                <label>Category</label>
+                                <select id="category-${d.id}">
+                                    <option value="history" ${d.category === "history" ? "selected" : ""}>history</option>
+                                    <option value="location" ${d.category === "location" ? "selected" : ""}>location</option>
+                                    <option value="literature" ${d.category === "literature" ? "selected" : ""}>literature</option>
+                                    <option value="culture" ${d.category === "culture" ? "selected" : ""}>culture</option>
+                                    <option value="religion" ${d.category === "religion" ? "selected" : ""}>religion</option>
+                                    <option value="language" ${d.category === "language" ? "selected" : ""}>language</option>
+                                    <option value="grammar" ${d.category === "grammar" ? "selected" : ""}>grammar</option>
+                                    <option value="cinema" ${d.category === "cinema" ? "selected" : ""}>cinema</option>
+                                    <option value="general" ${!d.category || d.category === "general" ? "selected" : ""}>general</option>
+                                </select>
+
+                                <div class="actions">
+                                    <button
+                                        id="approve-${d.id}"
+                                        class="approve"
+                                        onclick="approveDraft(${d.id})"
+                                    >
+                                        Approve
+                                    </button>
+
+                                    <button
+                                        class="delete"
+                                        onclick="deleteDraft(${d.id})"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
+                        `;
+                    });
 
-                            <label>Approved Question</label>
-                            <input id="question-${d.id}" value="${escapeHtml(d.question)}" />
-
-                            <label>Approved Answer</label>
-                            <label>Source Evidence / Imported Draft</label>
-                            <textarea readonly>${escapeHtml(d.answer)}</textarea>
-
-                            <label>Approved Answer</label>
-                            <textarea id="answer-${d.id}" placeholder="Write clean Kannada answer here. Do not paste Provider, URL, or draft notes."></textarea>
-
-                            <label>Category</label>
-
-                            <select id="category-${d.id}">
-                                <option value="history" ${d.category==="history" ? "selected" : ""}>history</option>
-                                <option value="location" ${d.category==="location" ? "selected" : ""}>location</option>
-                                <option value="literature" ${d.category==="literature" ? "selected" : ""}>literature</option>
-                                <option value="culture" ${d.category==="culture" ? "selected" : ""}>culture</option>
-                                <option value="religion" ${d.category==="religion" ? "selected" : ""}>religion</option>
-                                <option value="language" ${d.category==="language" ? "selected" : ""}>language</option>
-                                <option value="grammar" ${d.category==="grammar" ? "selected" : ""}>grammar</option>
-                                <option value="cinema" ${d.category==="cinema" ? "selected" : ""}>cinema</option>
-                                <option value="general" ${d.category==="general" ? "selected" : ""}>general</option>
-                            </select>
-                            <div class="actions">
-                                <button class="approve" onclick="approveDraft(${d.id})">
-                                    Approve
-                                </button>
-
-                                <button class="delete" onclick="deleteDraft(${d.id})">
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-            document.getElementById("drafts").innerHTML = html || "No pending drafts found.";
+                document.getElementById("drafts").innerHTML =
+                    html || "No pending drafts found.";
+            } catch (error) {
+                showMessage(`Failed to load drafts: ${error.message}`);
+            }
         }
 
         async function approveDraft(id) {
-            const question = document.getElementById(`question-${id}`).value;
-            const answer = document.getElementById(`answer-${id}`).value;
-            const category = document.getElementById(`category-${id}`).value;
+            const questionInput = document.getElementById(`question-${id}`);
+            const answerInput = document.getElementById(`answer-${id}`);
+            const categoryInput = document.getElementById(`category-${id}`);
+            const approveButton = document.getElementById(`approve-${id}`);
 
-            const response = await fetch(`/admin/drafts/${id}/approve`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    question,
-                    answer,
-                    category,
-                }),
-            });
+            const question = questionInput.value.trim();
+            const answer = answerInput.value.trim();
+            const category = categoryInput.value.trim();
 
-            if (response.ok) {
-                showMessage(`Draft ${id} approved successfully.`);
-                loadDrafts();
-            } else {
-                const errorData = await response.json();
-                showMessage(`Failed to approve draft ${id}: ${errorData.detail}`);
+            if (!question) {
+                showMessage(`Draft ${id}: approved question cannot be empty.`);
+                questionInput.focus();
+                return;
+            }
+
+            if (!answer) {
+                showMessage(`Draft ${id}: approved answer cannot be empty.`);
+                answerInput.focus();
+                return;
+            }
+
+            if (!category) {
+                showMessage(`Draft ${id}: category cannot be empty.`);
+                categoryInput.focus();
+                return;
+            }
+
+            approveButton.disabled = true;
+            approveButton.innerText = "Publishing...";
+
+            try {
+                const response = await fetch(`/admin/drafts/${id}/approve`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        question,
+                        answer,
+                        category,
+                    }),
+                });
+
+                const responseData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        responseData.detail ||
+                        `Approval failed with status ${response.status}.`
+                    );
+                }
+
+                showMessage(
+                    `Draft ${id} approved and published successfully. ` +
+                    `Loaded ${responseData.publish.records_loaded} records; ` +
+                    `evaluation passed ${responseData.publish.evaluation.passed}, ` +
+                    `failed ${responseData.publish.evaluation.failed}.`
+                );
+
+                await loadDrafts();
+            } catch (error) {
+                showMessage(`Failed to approve draft ${id}: ${error.message}`);
+                approveButton.disabled = false;
+                approveButton.innerText = "Approve";
             }
         }
 
@@ -181,15 +263,24 @@
                 return;
             }
 
-            const response = await fetch(`/admin/drafts/${id}`, {
-                method: "DELETE",
-            });
+            try {
+                const response = await fetch(`/admin/drafts/${id}`, {
+                    method: "DELETE",
+                });
 
-            if (response.ok) {
+                const responseData = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        responseData.detail ||
+                        `Delete failed with status ${response.status}.`
+                    );
+                }
+
                 showMessage(`Draft ${id} deleted.`);
-                loadDrafts();
-            } else {
-                showMessage(`Failed to delete draft ${id}.`);
+                await loadDrafts();
+            } catch (error) {
+                showMessage(`Failed to delete draft ${id}: ${error.message}`);
             }
         }
 

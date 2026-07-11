@@ -14,6 +14,35 @@ def connect_db() -> sqlite3.Connection:
     return sqlite3.connect(DRAFT_DB_PATH)
 
 
+def ensure_draft_columns(connection: sqlite3.Connection) -> None:
+    cursor = connection.cursor()
+
+    cursor.execute("PRAGMA table_info(draft_knowledge)")
+    existing_columns = {
+        row[1]
+        for row in cursor.fetchall()
+    }
+
+    required_columns = {
+        "suggested_answer": "TEXT NOT NULL DEFAULT ''",
+        "evidence": "TEXT NOT NULL DEFAULT ''",
+        "editorial_warnings": "TEXT NOT NULL DEFAULT ''",
+        "category": "TEXT NOT NULL DEFAULT 'general'",
+        "draft_type": "TEXT NOT NULL DEFAULT 'runtime_fallback'",
+    }
+
+    for column_name, column_definition in required_columns.items():
+        if column_name not in existing_columns:
+            cursor.execute(
+                f"""
+                ALTER TABLE draft_knowledge
+                ADD COLUMN {column_name} {column_definition}
+                """
+            )
+
+    connection.commit()
+
+
 def create_draft_table() -> None:
     connection = connect_db()
     cursor = connection.cursor()
@@ -24,6 +53,11 @@ def create_draft_table() -> None:
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             question TEXT NOT NULL,
             answer TEXT NOT NULL,
+            suggested_answer TEXT NOT NULL DEFAULT '',
+            evidence TEXT NOT NULL DEFAULT '',
+            editorial_warnings TEXT NOT NULL DEFAULT '',
+            category TEXT NOT NULL DEFAULT 'general',
+            draft_type TEXT NOT NULL DEFAULT 'runtime_fallback',
             source TEXT NOT NULL DEFAULT 'internet',
             status TEXT NOT NULL DEFAULT 'draft',
             hit_count INTEGER NOT NULL DEFAULT 1,
@@ -33,12 +67,28 @@ def create_draft_table() -> None:
         """
     )
 
-    connection.commit()
+    ensure_draft_columns(connection)
     connection.close()
 
-
-def save_draft_answer(question: str, answer: str) -> dict[str, Any]:
+def save_draft_answer(
+    question: str,
+    answer: str,
+    *,
+    suggested_answer: str = "",
+    evidence: str = "",
+    editorial_warnings: str = "",
+    category: str = "general",
+    draft_type: str = "runtime_fallback",
+) -> dict[str, Any]:
     create_draft_table()
+
+    clean_question = question.strip()
+    clean_answer = answer.strip()
+    clean_suggested_answer = suggested_answer.strip()
+    clean_evidence = evidence.strip()
+    clean_editorial_warnings = editorial_warnings.strip()
+    clean_category = category.strip() or "general"
+    clean_draft_type = draft_type.strip() or "runtime_fallback"
 
     connection = connect_db()
     cursor = connection.cursor()
@@ -50,7 +100,7 @@ def save_draft_answer(question: str, answer: str) -> dict[str, Any]:
         WHERE question = ?
           AND status = 'draft'
         """,
-        (question,),
+        (clean_question,),
     )
 
     existing = cursor.fetchone()
@@ -63,11 +113,25 @@ def save_draft_answer(question: str, answer: str) -> dict[str, Any]:
             UPDATE draft_knowledge
             SET
                 answer = ?,
+                suggested_answer = ?,
+                evidence = ?,
+                editorial_warnings = ?,
+                category = ?,
+                draft_type = ?,
                 hit_count = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
             """,
-            (answer, hit_count + 1, draft_id),
+            (
+                clean_answer,
+                clean_suggested_answer,
+                clean_evidence,
+                clean_editorial_warnings,
+                clean_category,
+                clean_draft_type,
+                hit_count + 1,
+                draft_id,
+            ),
         )
 
         connection.commit()
@@ -83,11 +147,24 @@ def save_draft_answer(question: str, answer: str) -> dict[str, Any]:
         """
         INSERT INTO draft_knowledge (
             question,
-            answer
+            answer,
+            suggested_answer,
+            evidence,
+            editorial_warnings,
+            category,
+            draft_type
         )
-        VALUES (?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """,
-        (question, answer),
+        (
+            clean_question,
+            clean_answer,
+            clean_suggested_answer,
+            clean_evidence,
+            clean_editorial_warnings,
+            clean_category,
+            clean_draft_type,
+        ),
     )
 
     draft_id = cursor.lastrowid
@@ -110,7 +187,20 @@ def list_draft_answers() -> list[dict[str, Any]]:
 
     cursor.execute(
         """
-        SELECT id, question, answer, source, status, hit_count, created_at, updated_at
+        SELECT
+            id,
+            question,
+            answer,
+            suggested_answer,
+            evidence,
+            editorial_warnings,
+            category,
+            draft_type,
+            source,
+            status,
+            hit_count,
+            created_at,
+            updated_at
         FROM draft_knowledge
         ORDER BY updated_at DESC
         """
@@ -124,11 +214,16 @@ def list_draft_answers() -> list[dict[str, Any]]:
             "id": row[0],
             "question": row[1],
             "answer": row[2],
-            "source": row[3],
-            "status": row[4],
-            "hit_count": row[5],
-            "created_at": row[6],
-            "updated_at": row[7],
+            "suggested_answer": row[3],
+            "evidence": row[4],
+            "editorial_warnings": row[5],
+            "category": row[6],
+            "draft_type": row[7],
+            "source": row[8],
+            "status": row[9],
+            "hit_count": row[10],
+            "created_at": row[11],
+            "updated_at": row[12],
         }
         for row in rows
     ]
@@ -142,7 +237,20 @@ def get_draft_answer(draft_id: int) -> dict[str, Any]:
 
     cursor.execute(
         """
-        SELECT id, question, answer, source, status, hit_count, created_at, updated_at
+        SELECT
+            id,
+            question,
+            answer,
+            suggested_answer,
+            evidence,
+            editorial_warnings,
+            category,
+            draft_type,
+            source,
+            status,
+            hit_count,
+            created_at,
+            updated_at
         FROM draft_knowledge
         WHERE id = ?
         """,
@@ -163,11 +271,16 @@ def get_draft_answer(draft_id: int) -> dict[str, Any]:
         "id": row[0],
         "question": row[1],
         "answer": row[2],
-        "source": row[3],
-        "draft_status": row[4],
-        "hit_count": row[5],
-        "created_at": row[6],
-        "updated_at": row[7],
+        "suggested_answer": row[3],
+        "evidence": row[4],
+        "editorial_warnings": row[5],
+        "category": row[6],
+        "draft_type": row[7],
+        "source": row[8],
+        "draft_status": row[9],
+        "hit_count": row[10],
+        "created_at": row[11],
+        "updated_at": row[12],
     }
 
 
@@ -250,8 +363,45 @@ def delete_draft_answer(draft_id: int) -> dict[str, Any]:
         "draft_id": draft_id,
     }
 
+def update_draft_status(
+    draft_id: int,
+    status: str,
+) -> dict[str, Any]:
+    create_draft_table()
 
-def approve_draft_answer(
+    connection = connect_db()
+    cursor = connection.cursor()
+
+    cursor.execute(
+        """
+        UPDATE draft_knowledge
+        SET
+            status = ?,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+        """,
+        (status, draft_id),
+    )
+
+    updated_count = cursor.rowcount
+
+    connection.commit()
+    connection.close()
+
+    if updated_count == 0:
+        return {
+            "status": "not_found",
+            "draft_id": draft_id,
+        }
+
+    return {
+        "status": "updated",
+        "draft_id": draft_id,
+        "draft_status": status,
+    }
+
+
+def create_article_from_draft(
     draft_id: int,
     approved_question: str,
     approved_answer: str,
@@ -261,10 +411,17 @@ def approve_draft_answer(
 
     draft = get_draft_answer(draft_id)
 
-    if draft.get("status") != "found" or draft.get("draft_status") != "draft":
+    if draft.get("status") != "found":
         return {
             "status": "not_found",
             "draft_id": draft_id,
+        }
+
+    if draft.get("draft_status") != "publishing":
+        return {
+            "status": "invalid_status",
+            "draft_id": draft_id,
+            "draft_status": draft.get("draft_status"),
         }
 
     article_result = add_admin_article(
@@ -275,25 +432,8 @@ def approve_draft_answer(
         language="kn",
     )
 
-    connection = connect_db()
-    cursor = connection.cursor()
-
-    cursor.execute(
-        """
-        UPDATE draft_knowledge
-        SET
-            status = 'approved',
-            updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-        """,
-        (draft_id,),
-    )
-
-    connection.commit()
-    connection.close()
-
     return {
-        "status": "approved",
+        "status": "article_created",
         "draft_id": draft_id,
         "question": approved_question,
         "category": category,

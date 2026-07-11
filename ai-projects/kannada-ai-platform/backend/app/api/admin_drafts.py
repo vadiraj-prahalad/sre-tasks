@@ -7,12 +7,14 @@ from app.db.tools.evaluate_rag import evaluate
 from app.db.tools.generate_chunk_embeddings import generate_chunk_embeddings
 from app.db.tools.sync_standardized_articles import sync_standardized_articles
 from app.services.draft_knowledge_service import (
-    approve_draft_answer,
+    create_article_from_draft,
     delete_draft_answer,
     list_draft_answers,
+    update_draft_status,
 )
 from app.services.knowledge_loader import load_knowledge_to_db
 from scripts.refresh_knowledge import main as refresh_jsonl
+from app.services.admin_knowledge_service import delete_admin_article_by_id
 
 
 router = APIRouter(prefix="/admin/drafts", tags=["admin-drafts"])
@@ -24,7 +26,33 @@ class ApproveDraftRequest(BaseModel):
     category: str
 
 
-def validate_approved_answer(answer: str) -> None:
+def validate_approved_content(
+    question: str,
+    answer: str,
+    category: str,
+) -> tuple[str, str, str]:
+    clean_question = question.strip()
+    clean_answer = answer.strip()
+    clean_category = category.strip()
+
+    if not clean_question:
+        raise HTTPException(
+            status_code=400,
+            detail="Approved question cannot be empty.",
+        )
+
+    if not clean_answer:
+        raise HTTPException(
+            status_code=400,
+            detail="Approved answer cannot be empty.",
+        )
+
+    if not clean_category:
+        raise HTTPException(
+            status_code=400,
+            detail="Category cannot be empty.",
+        )
+
     bad_markers = [
         "Provider:",
         "URL:",
@@ -35,7 +63,7 @@ def validate_approved_answer(answer: str) -> None:
         "ಮಾನವ ಪರಿಶೀಲನೆಯ ನಂತರ ಮಾತ್ರ ಪ್ರಕಟಿಸಬೇಕು",
     ]
 
-    if any(marker in answer for marker in bad_markers):
+    if any(marker in clean_answer for marker in bad_markers):
         raise HTTPException(
             status_code=400,
             detail=(
@@ -43,6 +71,7 @@ def validate_approved_answer(answer: str) -> None:
                 "Please write a clean Kannada answer before approving."
             ),
         )
+    return clean_question, clean_answer, clean_category
 
 
 def publish_knowledge_after_approval() -> dict:
@@ -86,21 +115,90 @@ def delete_draft(draft_id: int):
 
 @router.post("/{draft_id}/approve")
 def approve_draft(draft_id: int, payload: ApproveDraftRequest):
-    validate_approved_answer(payload.answer)
-
-    result = approve_draft_answer(
-        draft_id=draft_id,
-        approved_question=payload.question,
-        approved_answer=payload.answer,
+    question, answer, category = validate_approved_content(
+        question=payload.question,
+        answer=payload.answer,
         category=payload.category,
     )
 
-    if result["status"] != "approved":
-        raise HTTPException(status_code=404, detail="Draft not found or already approved")
+    publishing_result = update_draft_status(
+        draft_id=draft_id,
+        status="publishing",
+    )
 
-    publish_result = publish_knowledge_after_approval()
+    if publishing_result["status"] != "updated":
+        raise HTTPException(
+            status_code=404,
+            detail="Draft not found.",
+        )
 
-    return {
-        **result,
-        "publish": publish_result,
-    }
+    article_id = None
+
+    try:
+        article_result = create_article_from_draft(
+            draft_id=draft_id,
+            approved_question=question,
+            approved_answer=answer,
+            category=category,
+        )
+
+        if article_result["status"] != "article_created":
+            update_draft_status(draft_id, "publish_failed")
+
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Draft could not enter the publishing pipeline. "
+                    f"Current status: {article_result.get('draft_status')}"
+                ),
+            )
+
+        article = article_result.get("article") or {}
+        article_id = article.get("id")
+
+        if not article_id:
+            raise RuntimeError(
+                "Article was created without a stable article ID."
+            )
+
+        publish_result = publish_knowledge_after_approval()
+
+        approval_result = update_draft_status(
+            draft_id=draft_id,
+            status="approved",
+        )
+
+        if approval_result["status"] != "updated":
+            raise RuntimeError(
+                "Knowledge was published, but the draft status "
+                "could not be changed to approved."
+            )
+
+        return {
+            "status": "approved",
+            "draft_id": draft_id,
+            "question": question,
+            "category": category,
+            "article": article,
+            "publish": publish_result,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as error:
+        if article_id:
+            delete_admin_article_by_id(article_id)
+
+        update_draft_status(
+            draft_id=draft_id,
+            status="publish_failed",
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Publishing failed and the provisional article "
+                f"was rolled back: {error}"
+            ),
+        ) from error

@@ -150,3 +150,23 @@ def delete_admin_article(index: int) -> dict[str, Any]:
         "article": removed_article,
         "total_articles": len(articles),
     }
+
+def delete_admin_article_by_id(article_id: str) -> dict[str, Any]:
+    articles = load_admin_articles()
+
+    for index, article in enumerate(articles):
+        if article.get("id") == article_id:
+            removed_article = articles.pop(index)
+            save_admin_articles(articles)
+
+            return {
+                "status": "deleted",
+                "article_id": article_id,
+                "article": removed_article,
+                "total_articles": len(articles),
+            }
+
+    return {
+        "status": "not_found",
+        "article_id": article_id,
+    }

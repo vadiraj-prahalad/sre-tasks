@@ -63,6 +63,10 @@ def normalize_digits(value: str) -> str:
 def extract_years(value: str) -> set[int]:
     """
     Extract four-digit years from English or Kannada text.
+
+    This helper is retained for future structured date validation.
+    It is not used for Beta v1 conflict detection because multiple
+    years may represent different valid facts.
     """
 
     normalized = normalize_digits(value)
@@ -75,7 +79,7 @@ def extract_years(value: str) -> set[int]:
 
 def source_text(source: dict[str, Any]) -> str:
     """
-    Combine the useful textual fields of one evidence source.
+    Combine useful textual fields from one normalized evidence source.
     """
 
     metadata = source.get("metadata") or {}
@@ -97,29 +101,31 @@ def source_text(source: dict[str, Any]) -> str:
 
 def contains_belief_language(value: str) -> bool:
     """
-    Detect whether a source contains folklore, tradition, or belief wording.
+    Detect folklore, tradition, or belief wording.
     """
 
-    normalized = (value or "").lower()
+    normalized = (value or "").casefold()
 
     return any(
-        phrase.lower() in normalized
+        phrase.casefold() in normalized
         for phrase in BELIEF_PHRASES
     )
 
 
-def clean_metadata(metadata: dict[str, Any]) -> dict[str, Any]:
+def clean_metadata(
+    metadata: dict[str, Any],
+) -> dict[str, Any]:
     """
-    Keep only metadata that is useful for editorial generation.
+    Retain only metadata useful to editorial generation and entity handling.
 
-    This removes noisy fields such as HTML display titles, raw API matches,
-    repository data, and other provider-specific implementation details.
+    Raw API matches, HTML display values, repositories, and other
+    provider-specific implementation details are removed.
     """
 
     if not metadata:
         return {}
 
-    cleaned = {}
+    cleaned: dict[str, Any] = {}
 
     for key, value in metadata.items():
         if key not in USEFUL_METADATA_FIELDS:
@@ -137,10 +143,19 @@ def detect_year_conflicts(
     sources: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """
-    Detect differing years across accepted evidence sources.
+    Detect multiple years in evidence.
 
-    This is intentionally conservative. It reports possible conflicts but
-    does not try to decide which source is correct.
+    Important:
+    This detector is intentionally not called in Beta v1.
+
+    Multiple years do not necessarily conflict. They may represent:
+    - birth and death years;
+    - founding and completion years;
+    - reign periods;
+    - multiple valid historical events.
+
+    It should be re-enabled only after evidence includes structured
+    date roles such as birth_year, death_year, or founded_year.
     """
 
     year_sources: dict[int, list[str]] = {}
@@ -167,7 +182,7 @@ def detect_year_conflicts(
             },
             "instruction": (
                 "Multiple different years appear in the evidence. "
-                "Do not include uncertain dates unless the sources clearly agree."
+                "Do not include uncertain dates unless their roles are clear."
             ),
         }
     ]
@@ -180,7 +195,7 @@ def detect_entity_id_conflicts(
     Detect whether accepted sources refer to different Wikidata entities.
     """
 
-    ids: dict[str, list[str]] = {}
+    entity_ids: dict[str, list[str]] = {}
 
     for source in sources:
         provider = source.get("provider", "Unknown")
@@ -192,16 +207,26 @@ def detect_entity_id_conflicts(
             or source.get("entity_id")
         )
 
-        if entity_id:
-            ids.setdefault(str(entity_id), []).append(provider)
+        if not entity_id:
+            continue
 
-    if len(ids) <= 1:
+        normalized_id = str(entity_id).strip().upper()
+
+        if not normalized_id:
+            continue
+
+        entity_ids.setdefault(
+            normalized_id,
+            [],
+        ).append(provider)
+
+    if len(entity_ids) <= 1:
         return []
 
     return [
         {
             "type": "entity_id_conflict",
-            "entity_ids": ids,
+            "entity_ids": entity_ids,
             "instruction": (
                 "The evidence appears to refer to different entities. "
                 "Do not generate or publish the article until the entity is resolved."
@@ -217,13 +242,16 @@ def detect_belief_warnings(
     Record sources containing traditional belief or folklore wording.
     """
 
-    providers = []
+    providers: list[str] = []
 
     for source in sources:
-        if contains_belief_language(source_text(source)):
-            providers.append(
-                source.get("provider", "Unknown")
-            )
+        if not contains_belief_language(source_text(source)):
+            continue
+
+        provider = source.get("provider", "Unknown")
+
+        if provider not in providers:
+            providers.append(provider)
 
     if not providers:
         return []
@@ -245,12 +273,18 @@ def analyze_evidence_conflicts(
     sources: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """
-    Analyze accepted evidence before it is sent to the editorial model.
+    Analyze accepted evidence before editorial generation.
 
-    Returns cleaned evidence and editorial warnings.
+    Beta v1 behavior:
+    - clean provider metadata;
+    - detect conflicting entity IDs;
+    - detect belief or tradition wording;
+    - do not infer year conflicts from unstructured text.
+
+    Returns cleaned sources and editorial warnings.
     """
 
-    cleaned_sources = []
+    cleaned_sources: list[dict[str, Any]] = []
 
     for source in sources:
         cleaned_source = {
@@ -261,14 +295,23 @@ def analyze_evidence_conflicts(
         }
         cleaned_sources.append(cleaned_source)
 
-    warnings = []
+    warnings: list[dict[str, Any]] = []
 
     warnings.extend(
         detect_entity_id_conflicts(cleaned_sources)
     )
-    warnings.extend(
-        detect_year_conflicts(cleaned_sources)
-    )
+
+    # Year conflict detection is disabled for Beta v1.
+    #
+    # Multiple years may represent different valid facts, such as
+    # birth year, death year, founding year, or reign period.
+    #
+    # Re-enable only after evidence contains structured date roles.
+    #
+    # warnings.extend(
+    #     detect_year_conflicts(cleaned_sources)
+    # )
+
     warnings.extend(
         detect_belief_warnings(cleaned_sources)
     )
@@ -290,7 +333,7 @@ def build_conflict_instructions(
     warnings: list[dict[str, Any]],
 ) -> str:
     """
-    Convert conflict warnings into concise prompt instructions.
+    Convert conflict warnings into concise editorial instructions.
     """
 
     if not warnings:
@@ -301,7 +344,11 @@ def build_conflict_instructions(
     ]
 
     for index, warning in enumerate(warnings, start=1):
-        instruction = warning.get("instruction", "")
-        lines.append(f"{index}. {instruction}")
+        instruction = str(
+            warning.get("instruction", "")
+        ).strip()
+
+        if instruction:
+            lines.append(f"{index}. {instruction}")
 
     return "\n".join(lines)

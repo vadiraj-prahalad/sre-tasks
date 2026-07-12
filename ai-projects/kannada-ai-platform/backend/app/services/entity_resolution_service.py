@@ -25,19 +25,24 @@ def clean_resolved_topic(value: str) -> str:
     resolution always works on a clean topic name.
     """
 
-    cleaned = value.strip()
+    cleaned = (value or "").strip()
 
     suffixes = [
         " ಬಗ್ಗೆ ಹೇಳಿ",
+        " ಬಗ್ಗೆ ತಿಳಿಸಿ",
         " ಯಾರು?",
+        " ಯಾರು",
         " ಎಂದರೇನು?",
+        " ಎಂದರೇನು",
         " ಏನು?",
+        " ಏನು",
     ]
 
     for suffix in suffixes:
-        cleaned = cleaned.replace(suffix, "")
+        if cleaned.endswith(suffix):
+            cleaned = cleaned.removesuffix(suffix).strip()
 
-    return cleaned.strip()
+    return cleaned
 
 
 def resolve_entity(
@@ -47,32 +52,43 @@ def resolve_entity(
     """
     Resolve a user topic into a canonical KnowledgeEntity.
 
-    Current responsibilities:
-    - Trim input
-    - Alias lookup
-    - Basic cleanup
+    Responsibilities:
+    - Clean the user query.
+    - Resolve curated aliases.
+    - Return a basic KnowledgeEntity.
 
-    Future responsibilities:
-    - Wikidata enrichment
-    - Canonical Kannada title
-    - Entity type detection
-    - Confidence scoring
+    External enrichment (Wikipedia/Wikidata) happens later.
     """
 
-    original = topic.strip()
+    original_query = (topic or "").strip()
+
+    normalized_query = clean_resolved_topic(original_query)
 
     aliases = load_aliases()
 
-    resolved = clean_resolved_topic(
-        aliases.get(original.lower(), original)
+    alias_value = aliases.get(normalized_query.lower())
+    alias_matched = alias_value is not None
+
+    resolved_topic = clean_resolved_topic(
+        alias_value if alias_matched else normalized_query
     )
 
+    if alias_matched:
+        confidence = 1.0
+        resolution_method = "alias_lookup"
+    elif resolved_topic:
+        confidence = 0.50
+        resolution_method = "normalized_input"
+    else:
+        confidence = 0.0
+        resolution_method = "empty_input"
+
     return KnowledgeEntity(
-        original_query=original,
-        normalized_query=original,
-        resolved_topic=resolved,
-        display_name=resolved,
-        domain=category or "general",
-        confidence=1.0 if resolved != original else 0.90,
-        resolution_method="alias_lookup",
+        original_query=original_query,
+        normalized_query=normalized_query,
+        resolved_topic=resolved_topic,
+        display_name=resolved_topic,
+        domain=(category or "general").strip().lower(),
+        confidence=confidence,
+        resolution_method=resolution_method,
     )

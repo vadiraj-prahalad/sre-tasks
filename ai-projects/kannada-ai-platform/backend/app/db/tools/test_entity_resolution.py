@@ -1,7 +1,7 @@
 from app.services.entity_resolution_service import resolve_entity
 
 
-def run():
+def run() -> None:
     tests = [
         ("Basavanna", "religion"),
         ("Basaveshwara", "religion"),
@@ -16,12 +16,21 @@ def run():
     print("=" * 70)
 
     for topic, category in tests:
-        result = resolve_entity(topic, category)
+        entity = resolve_entity(topic, category)
 
-        print(f"Input      : {topic}")
-        print(f"Resolved   : {result['resolved']}")
-        print(f"Changed    : {result['changed']}")
-        print(f"Category   : {result['category']}")
+        entity_changed = (
+            entity.resolved_topic != entity.original_query
+        )
+
+        print(f"Input          : {entity.original_query}")
+        print(f"Normalized     : {entity.normalized_query}")
+        print(f"Resolved       : {entity.resolved_topic}")
+        print(f"Preferred Name : {entity.preferred_name}")
+        print(f"Changed        : {entity_changed}")
+        print(f"Entity Type    : {entity.entity_type}")
+        print(f"Domain         : {entity.domain}")
+        print(f"Confidence     : {entity.confidence}")
+        print(f"Method         : {entity.resolution_method}")
         print("-" * 70)
 
 

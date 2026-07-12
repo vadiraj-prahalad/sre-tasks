@@ -14,7 +14,7 @@ from app.services.internet_providers.kannada_wikipedia_provider import (
 )
 from app.services.internet_providers.wikidata_provider import WikidataProvider
 from app.services.internet_providers.wikipedia_provider import WikipediaProvider
-
+from app.services.entity_enrichment_service import enrich_entity
 
 def collect_topic_evidence(topic: str) -> list[dict[str, Any]]:
     """
@@ -92,6 +92,7 @@ def format_metadata(metadata: dict[str, Any]) -> list[str]:
         "wikibase_item": "Wikidata ID",
         "canonical_title": "Canonical title",
         "normalized_title": "Normalized title",
+        "display_title": "Display title",
         "entity_id": "Entity ID",
         "lookup_method": "Lookup method",
         "english_label": "English label",
@@ -231,7 +232,9 @@ def import_topic_as_draft(
     """
 
     entity = resolve_entity(topic, category)
-    resolved_topic = entity["resolved"]
+
+    resolved_topic = entity.resolved_topic
+    entity_changed = entity.resolved_topic != entity.original_query
 
     raw_evidence = collect_topic_evidence(resolved_topic)
 
@@ -261,27 +264,27 @@ def import_topic_as_draft(
     if not sources:
         return {
             "status": "not_found",
-            "topic": topic,
-            "original_topic": topic,
-            "resolved_topic": resolved_topic,
-            "entity_changed": entity.get("changed", False),
-            "category": category,
+            "topic": entity.preferred_name,
+            "original_topic": entity.original_query,
+            "resolved_topic": entity.resolved_topic,
+            "entity_changed": entity.changed,
+            "category": entity.domain,
             "evidence": raw_evidence,
             "evidence_warnings": warnings,
             "message": "No relevant and trustworthy sources found.",
         }
 
     # Different entity IDs indicate that the evidence may refer to
-    # different real-world entities. Do not spend OpenAI tokens or
-    # create a draft until this is manually resolved.
+    # different real-world entities. Do not spend editorial AI tokens
+    # or create a draft until this is manually resolved.
     if conflict_result["blocking_conflict"]:
         return {
             "status": "blocked_conflict",
-            "topic": topic,
-            "original_topic": topic,
+            "topic": entity.preferred_name,
+            "original_topic": entity.original_query,
             "resolved_topic": resolved_topic,
-            "entity_changed": entity.get("changed", False),
-            "category": category,
+            "entity_changed": entity_changed,
+            "category": entity.domain,
             "successful_sources": len(sources),
             "total_sources_checked": len(raw_evidence),
             "evidence_warnings": warnings,
@@ -293,13 +296,18 @@ def import_topic_as_draft(
             ),
         }
 
-    best_title = sources[0].get("title") or resolved_topic
+    entity = enrich_entity(
+        entity=entity,
+        sources=sources,
+    )
+
+    best_title = entity.preferred_name
 
     question = build_kannada_draft_question(best_title)
 
     review_content = build_review_draft_answer(
         topic=best_title,
-        category=category,
+        category=entity.domain,
         sources=sources,
         conflict_instructions=conflict_instructions,
     )
@@ -310,23 +318,47 @@ def import_topic_as_draft(
         suggested_answer=review_content["suggested_answer"],
         evidence=review_content["evidence"],
         editorial_warnings=review_content["editorial_warnings"],
-        category=category,
+        category=entity.domain,
         draft_type="editorial_import",
     )
 
     return {
         "status": "draft_created",
+
         "topic": best_title,
-        "original_topic": topic,
-        "resolved_topic": resolved_topic,
-        "entity_changed": entity.get("changed", False),
+        "original_topic": entity.original_query,
+        "resolved_topic": entity.resolved_topic,
+
+        "entity_changed": entity.changed,
+
+        # -------------------------------
+        # Canonical KnowledgeEntity fields
+        # -------------------------------
+        "canonical_name_en": entity.canonical_name_en,
+        "canonical_name_kn": entity.canonical_name_kn,
+        "display_name": entity.display_name,
+        "preferred_name": entity.preferred_name,
+
+        "entity_type": entity.entity_type,
+        "domain": entity.domain,
+        "wikidata_id": entity.wikidata_id,
+
+        "entity_confidence": entity.confidence,
+        "resolution_method": entity.resolution_method,
+
+        # -------------------------------
+        # Editorial pipeline metadata
+        # -------------------------------
         "question": question,
-        "category": category,
+        "category": entity.domain,
+
         "successful_sources": len(sources),
         "total_sources_checked": len(raw_evidence),
+
         "has_evidence_conflicts": conflict_result["has_conflicts"],
         "blocking_conflict": conflict_result["blocking_conflict"],
         "evidence_warnings": warnings,
+
         "sources": [
             {
                 "provider": source.get("provider"),
@@ -336,5 +368,6 @@ def import_topic_as_draft(
             }
             for source in sources
         ],
+
         "draft": draft_result,
     }

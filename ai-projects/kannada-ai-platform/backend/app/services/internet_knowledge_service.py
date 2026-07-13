@@ -1,22 +1,41 @@
 from typing import Any
 
-from app.services.draft_knowledge_service import save_draft_answer
-from app.services.editorial_draft_service import generate_editorial_draft
-from app.services.entity_resolution_service import resolve_entity
-from app.services.evidence_builder_service import build_evidence
+from app.services.draft_knowledge_service import (
+    save_draft_answer,
+)
+from app.services.editorial_draft_service import (
+    generate_editorial_draft,
+)
+from app.services.entity_enrichment_service import (
+    enrich_entity,
+)
+from app.services.entity_resolution_service import (
+    resolve_entity,
+)
+from app.services.evidence_builder_service import (
+    build_evidence,
+)
 from app.services.evidence_conflict_service import (
     analyze_evidence_conflicts,
     build_conflict_instructions,
 )
-from app.services.evidence_quality_service import select_clean_evidence
+from app.services.evidence_quality_service import (
+    select_clean_evidence,
+)
 from app.services.internet_providers.kannada_wikipedia_provider import (
     KannadaWikipediaProvider,
 )
-from app.services.internet_providers.wikidata_provider import WikidataProvider
-from app.services.internet_providers.wikipedia_provider import WikipediaProvider
-from app.services.entity_enrichment_service import enrich_entity
+from app.services.internet_providers.wikidata_provider import (
+    WikidataProvider,
+)
+from app.services.internet_providers.wikipedia_provider import (
+    WikipediaProvider,
+)
 
-def collect_topic_evidence(topic: str) -> list[dict[str, Any]]:
+
+def collect_topic_evidence(
+    topic: str,
+) -> list[dict[str, Any]]:
     """
     Collect evidence in a controlled order.
 
@@ -25,30 +44,71 @@ def collect_topic_evidence(topic: str) -> list[dict[str, Any]]:
     2. Resolve the topic through English Wikipedia.
     3. If Wikipedia supplies a Wikidata Q-ID, fetch that exact entity.
     4. Use fuzzy Wikidata search only as a fallback.
+
+    Exact Wikidata retrieval also exposes structured P31
+    instance-of IDs for the later entity-classification stage.
     """
 
-    evidence: list[dict[str, Any]] = []
+    evidence: list[
+        dict[str, Any]
+    ] = []
 
-    kannada_result = KannadaWikipediaProvider().fetch(topic)
-    evidence.append(kannada_result)
+    kannada_result = (
+        KannadaWikipediaProvider().fetch(
+            topic
+        )
+    )
+    evidence.append(
+        kannada_result
+    )
 
-    wikipedia_result = WikipediaProvider().fetch(topic)
-    evidence.append(wikipedia_result)
+    wikipedia_result = (
+        WikipediaProvider().fetch(
+            topic
+        )
+    )
+    evidence.append(
+        wikipedia_result
+    )
 
-    wikidata_provider = WikidataProvider()
+    wikidata_provider = (
+        WikidataProvider()
+    )
 
-    wikipedia_metadata = wikipedia_result.get("metadata") or {}
-    wikibase_item = wikipedia_metadata.get("wikibase_item")
+    wikipedia_metadata = (
+        wikipedia_result.get(
+            "metadata"
+        )
+        or {}
+    )
 
-    if wikipedia_result.get("status") == "success" and wikibase_item:
-        wikidata_result = wikidata_provider.fetch_by_id(
-            entity_id=wikibase_item,
-            topic=topic,
+    wikibase_item = (
+        wikipedia_metadata.get(
+            "wikibase_item"
+        )
+    )
+
+    if (
+        wikipedia_result.get("status")
+        == "success"
+        and wikibase_item
+    ):
+        wikidata_result = (
+            wikidata_provider.fetch_by_id(
+                entity_id=wikibase_item,
+                topic=topic,
+            )
         )
     else:
-        wikidata_result = wikidata_provider.fetch(topic)
+        wikidata_result = (
+            wikidata_provider.fetch(
+                topic
+            )
+        )
 
-    evidence.append(wikidata_result)
+    evidence.append(
+        wikidata_result
+    )
 
     return evidence
 
@@ -57,17 +117,23 @@ def successful_sources(
     evidence: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """
-    Retain only provider responses that completed successfully.
+    Retain provider responses that completed successfully.
     """
 
     return [
         item
         for item in evidence
-        if item.get("status") == "success"
+        if (
+            isinstance(item, dict)
+            and item.get("status")
+            == "success"
+        )
     ]
 
 
-def build_kannada_draft_question(topic: str) -> str:
+def build_kannada_draft_question(
+    topic: str,
+) -> str:
     """
     Build the question displayed in the admin draft queue.
     """
@@ -75,14 +141,17 @@ def build_kannada_draft_question(topic: str) -> str:
     return f"{topic} ಬಗ್ಗೆ ಹೇಳಿ"
 
 
-def format_metadata(metadata: dict[str, Any]) -> list[str]:
+def format_metadata(
+    metadata: dict[str, Any],
+) -> list[str]:
     """
-    Convert useful evidence metadata into readable lines.
+    Convert useful normalized evidence metadata into readable lines.
 
-    Noisy metadata is already removed by evidence_conflict_service.
+    Noisy metadata is removed by evidence_conflict_service before
+    this function receives the evidence.
     """
 
-    if not metadata:
+    if not isinstance(metadata, dict) or not metadata:
         return []
 
     labels = {
@@ -97,20 +166,41 @@ def format_metadata(metadata: dict[str, Any]) -> list[str]:
         "lookup_method": "Lookup method",
         "english_label": "English label",
         "kannada_label": "Kannada label",
-        "english_description": "English description",
-        "kannada_description": "Kannada description",
+        "english_description": (
+            "English description"
+        ),
+        "kannada_description": (
+            "Kannada description"
+        ),
         "english_aliases": "English aliases",
         "kannada_aliases": "Kannada aliases",
+        "instance_of_ids": (
+            "Wikidata instance-of IDs"
+        ),
     }
 
     lines: list[str] = []
 
     for key, value in metadata.items():
-        if value in (None, "", [], {}):
+        if value in (
+            None,
+            "",
+            [],
+            {},
+        ):
             continue
 
-        label = labels.get(key, key.replace("_", " ").title())
-        lines.append(f"{label}: {value}")
+        label = labels.get(
+            key,
+            key.replace(
+                "_",
+                " ",
+            ).title(),
+        )
+
+        lines.append(
+            f"{label}: {value}"
+        )
 
     return lines
 
@@ -121,34 +211,69 @@ def build_evidence_text(
     """
     Convert normalized, cleaned evidence into text for:
 
-    - the editorial prompt
-    - the admin review screen
+    - the editorial prompt;
+    - the admin review screen.
+
+    Structured metadata remains visible for developer traceability.
+    Entity classification itself is performed by a later service.
     """
 
     sections: list[str] = []
 
-    for index, source in enumerate(sources, start=1):
+    for index, source in enumerate(
+        sources,
+        start=1,
+    ):
         lines = [
-            f"{index}. Provider: {source.get('provider', 'Unknown')}",
-            f"Trust: {source.get('trust_level', 'unknown')}",
-            f"Title: {source.get('title', '')}",
-            f"Summary: {source.get('summary', '')}",
-            f"URL: {source.get('url', '')}",
+            (
+                f"{index}. Provider: "
+                f"{source.get('provider', 'Unknown')}"
+            ),
+            (
+                "Trust: "
+                f"{source.get('trust_level', 'unknown')}"
+            ),
+            (
+                "Title: "
+                f"{source.get('title', '')}"
+            ),
+            (
+                "Summary: "
+                f"{source.get('summary', '')}"
+            ),
+            (
+                "URL: "
+                f"{source.get('url', '')}"
+            ),
         ]
 
-        metadata = source.get("metadata") or {}
-        metadata_lines = format_metadata(metadata)
+        metadata = (
+            source.get("metadata") or {}
+        )
+
+        metadata_lines = (
+            format_metadata(
+                metadata
+            )
+        )
 
         if metadata_lines:
-            lines.append("Metadata:")
+            lines.append(
+                "Metadata:"
+            )
             lines.extend(
                 f"- {metadata_line}"
-                for metadata_line in metadata_lines
+                for metadata_line
+                in metadata_lines
             )
 
-        sections.append("\n".join(lines))
+        sections.append(
+            "\n".join(lines)
+        )
 
-    return "\n\n".join(sections)
+    return "\n\n".join(
+        sections
+    )
 
 
 def build_review_draft_answer(
@@ -161,17 +286,25 @@ def build_review_draft_answer(
     Generate structured editorial content for human review.
 
     The returned values keep the AI-generated Kannada answer,
-    supporting evidence, editorial warnings, and legacy combined
-    review text separate.
+    supporting evidence, editorial warnings, and the legacy
+    combined review text separate.
     """
 
-    evidence_text = build_evidence_text(sources)
+    evidence_text = (
+        build_evidence_text(
+            sources
+        )
+    )
 
-    generated_draft = generate_editorial_draft(
-        topic=topic,
-        category=category,
-        evidence_text=evidence_text,
-        conflict_instructions=conflict_instructions,
+    generated_draft = (
+        generate_editorial_draft(
+            topic=topic,
+            category=category,
+            evidence_text=evidence_text,
+            conflict_instructions=(
+                conflict_instructions
+            ),
+        )
     )
 
     if not generated_draft:
@@ -181,13 +314,16 @@ def build_review_draft_answer(
             "ಮಾನವ ಪರಿಶೀಲಿತ ಉತ್ತರವನ್ನು ಬರೆಯಿರಿ."
         )
 
-    clean_conflict_instructions = conflict_instructions.strip()
+    clean_conflict_instructions = (
+        conflict_instructions.strip()
+    )
 
     warning_section = ""
 
     if clean_conflict_instructions:
         warning_section = (
-            "\n\nಸಾಕ್ಷ್ಯ ಪರಿಶೀಲನಾ ಎಚ್ಚರಿಕೆಗಳು:\n\n"
+            "\n\n"
+            "ಸಾಕ್ಷ್ಯ ಪರಿಶೀಲನಾ ಎಚ್ಚರಿಕೆಗಳು:\n\n"
             f"{clean_conflict_instructions}"
         )
 
@@ -200,15 +336,25 @@ def build_review_draft_answer(
         "ಗಮನಿಸಿ:\n"
         "1. ಈ ಕರಡು ಇನ್ನೂ ಪರಿಶೀಲಿತ ಉತ್ತರವಲ್ಲ.\n"
         "2. ಮಾನವ ಪರಿಶೀಲನೆಯ ನಂತರ ಮಾತ್ರ ಪ್ರಕಟಿಸಬೇಕು.\n"
-        "3. ತಪ್ಪು ಅಥವಾ ಅಸಹಜ ಕನ್ನಡ ಕಂಡುಬಂದರೆ ಸಂಪಾದಿಸಿ ಪ್ರಕಟಿಸಬೇಕು.\n"
-        "4. ಸಾಕ್ಷ್ಯಗಳಲ್ಲಿ ಭಿನ್ನ ಮಾಹಿತಿ ಇದ್ದರೆ ಪರಿಶೀಲಿಸದೆ ಪ್ರಕಟಿಸಬಾರದು."
+        "3. ತಪ್ಪು ಅಥವಾ ಅಸಹಜ ಕನ್ನಡ ಕಂಡುಬಂದರೆ "
+        "ಸಂಪಾದಿಸಿ ಪ್ರಕಟಿಸಬೇಕು.\n"
+        "4. ಸಾಕ್ಷ್ಯಗಳಲ್ಲಿ ಭಿನ್ನ ಮಾಹಿತಿ ಇದ್ದರೆ "
+        "ಪರಿಶೀಲಿಸದೆ ಪ್ರಕಟಿಸಬಾರದು."
     )
 
     return {
-        "suggested_answer": generated_draft.strip(),
-        "evidence": evidence_text.strip(),
-        "editorial_warnings": clean_conflict_instructions,
-        "combined_review_text": combined_review_text,
+        "suggested_answer": (
+            generated_draft.strip()
+        ),
+        "evidence": (
+            evidence_text.strip()
+        ),
+        "editorial_warnings": (
+            clean_conflict_instructions
+        ),
+        "combined_review_text": (
+            combined_review_text
+        ),
     }
 
 
@@ -227,22 +373,40 @@ def import_topic_as_draft(
     5. Normalize accepted evidence.
     6. Clean metadata and detect evidence conflicts.
     7. Block generation when different entities are detected.
-    8. Generate a Kannada editorial draft.
-    9. Save the draft for human approval.
+    8. Enrich the canonical entity.
+    9. Generate a Kannada editorial draft.
+    10. Save the draft for human approval.
+
+    Phase 6.1 transports Wikidata instance-of IDs through this
+    pipeline but intentionally leaves entity_type as GENERAL.
     """
 
-    entity = resolve_entity(topic, category)
+    entity = resolve_entity(
+        topic,
+        category,
+    )
 
-    resolved_topic = entity.resolved_topic
-    entity_changed = entity.resolved_topic != entity.original_query
+    resolved_topic = (
+        entity.resolved_topic
+    )
 
-    raw_evidence = collect_topic_evidence(resolved_topic)
+    raw_evidence = (
+        collect_topic_evidence(
+            resolved_topic
+        )
+    )
 
-    successful_evidence = successful_sources(raw_evidence)
+    successful_evidence = (
+        successful_sources(
+            raw_evidence
+        )
+    )
 
-    clean_sources = select_clean_evidence(
-        resolved_topic,
-        successful_evidence,
+    clean_sources = (
+        select_clean_evidence(
+            resolved_topic,
+            successful_evidence,
+        )
     )
 
     normalized_sources = [
@@ -250,49 +414,82 @@ def import_topic_as_draft(
         for source in clean_sources
     ]
 
-    conflict_result = analyze_evidence_conflicts(
-        normalized_sources
+    conflict_result = (
+        analyze_evidence_conflicts(
+            normalized_sources
+        )
     )
 
-    sources = conflict_result["sources"]
-    warnings = conflict_result["warnings"]
+    sources = (
+        conflict_result["sources"]
+    )
+    warnings = (
+        conflict_result["warnings"]
+    )
 
-    conflict_instructions = build_conflict_instructions(
-        warnings
+    conflict_instructions = (
+        build_conflict_instructions(
+            warnings
+        )
     )
 
     if not sources:
         return {
             "status": "not_found",
             "topic": entity.preferred_name,
-            "original_topic": entity.original_query,
-            "resolved_topic": entity.resolved_topic,
-            "entity_changed": entity.changed,
-            "category": entity.domain,
+            "original_topic": (
+                entity.original_query
+            ),
+            "resolved_topic": (
+                entity.resolved_topic
+            ),
+            "entity_changed": (
+                entity.changed
+            ),
+            "category": (
+                entity.domain
+            ),
             "evidence": raw_evidence,
             "evidence_warnings": warnings,
-            "message": "No relevant and trustworthy sources found.",
+            "message": (
+                "No relevant and trustworthy "
+                "sources found."
+            ),
         }
 
-    # Different entity IDs indicate that the evidence may refer to
-    # different real-world entities. Do not spend editorial AI tokens
-    # or create a draft until this is manually resolved.
-    if conflict_result["blocking_conflict"]:
+    # Different entity IDs indicate that the evidence may refer
+    # to different real-world entities. Do not spend editorial AI
+    # resources or create a draft until this is resolved.
+    if conflict_result[
+        "blocking_conflict"
+    ]:
         return {
             "status": "blocked_conflict",
             "topic": entity.preferred_name,
-            "original_topic": entity.original_query,
-            "resolved_topic": resolved_topic,
-            "entity_changed": entity_changed,
-            "category": entity.domain,
-            "successful_sources": len(sources),
-            "total_sources_checked": len(raw_evidence),
+            "original_topic": (
+                entity.original_query
+            ),
+            "resolved_topic": (
+                entity.resolved_topic
+            ),
+            "entity_changed": (
+                entity.changed
+            ),
+            "category": (
+                entity.domain
+            ),
+            "successful_sources": (
+                len(sources)
+            ),
+            "total_sources_checked": (
+                len(raw_evidence)
+            ),
             "evidence_warnings": warnings,
             "has_evidence_conflicts": True,
             "blocking_conflict": True,
             "message": (
-                "Evidence refers to conflicting entities. "
-                "Draft generation was blocked."
+                "Evidence refers to conflicting "
+                "entities. Draft generation was blocked."
             ),
         }
 
@@ -301,73 +498,146 @@ def import_topic_as_draft(
         sources=sources,
     )
 
-    best_title = entity.preferred_name
-
-    question = build_kannada_draft_question(best_title)
-
-    review_content = build_review_draft_answer(
-        topic=best_title,
-        category=entity.domain,
-        sources=sources,
-        conflict_instructions=conflict_instructions,
+    best_title = (
+        entity.preferred_name
     )
 
-    draft_result = save_draft_answer(
-        question,
-        review_content["combined_review_text"],
-        suggested_answer=review_content["suggested_answer"],
-        evidence=review_content["evidence"],
-        editorial_warnings=review_content["editorial_warnings"],
-        category=entity.domain,
-        draft_type="editorial_import",
+    question = (
+        build_kannada_draft_question(
+            best_title
+        )
+    )
+
+    review_content = (
+        build_review_draft_answer(
+            topic=best_title,
+            category=entity.domain,
+            sources=sources,
+            conflict_instructions=(
+                conflict_instructions
+            ),
+        )
+    )
+
+    draft_result = (
+        save_draft_answer(
+            question,
+            review_content[
+                "combined_review_text"
+            ],
+            suggested_answer=(
+                review_content[
+                    "suggested_answer"
+                ]
+            ),
+            evidence=(
+                review_content[
+                    "evidence"
+                ]
+            ),
+            editorial_warnings=(
+                review_content[
+                    "editorial_warnings"
+                ]
+            ),
+            category=entity.domain,
+            draft_type=(
+                "editorial_import"
+            ),
+        )
     )
 
     return {
         "status": "draft_created",
-
         "topic": best_title,
-        "original_topic": entity.original_query,
-        "resolved_topic": entity.resolved_topic,
+        "original_topic": (
+            entity.original_query
+        ),
+        "resolved_topic": (
+            entity.resolved_topic
+        ),
+        "entity_changed": (
+            entity.changed
+        ),
 
-        "entity_changed": entity.changed,
-
-        # -------------------------------
         # Canonical KnowledgeEntity fields
-        # -------------------------------
-        "canonical_name_en": entity.canonical_name_en,
-        "canonical_name_kn": entity.canonical_name_kn,
-        "display_name": entity.display_name,
-        "preferred_name": entity.preferred_name,
+        "canonical_name_en": (
+            entity.canonical_name_en
+        ),
+        "canonical_name_kn": (
+            entity.canonical_name_kn
+        ),
+        "display_name": (
+            entity.display_name
+        ),
+        "preferred_name": (
+            entity.preferred_name
+        ),
+        "entity_type": (
+            entity.entity_type
+        ),
+        "domain": (
+            entity.domain
+        ),
+        "wikidata_id": (
+            entity.wikidata_id
+        ),
+        "entity_confidence": (
+            entity.confidence
+        ),
+        "resolution_method": (
+            entity.resolution_method
+        ),
 
-        "entity_type": entity.entity_type,
-        "domain": entity.domain,
-        "wikidata_id": entity.wikidata_id,
-
-        "entity_confidence": entity.confidence,
-        "resolution_method": entity.resolution_method,
-
-        # -------------------------------
         # Editorial pipeline metadata
-        # -------------------------------
         "question": question,
-        "category": entity.domain,
-
-        "successful_sources": len(sources),
-        "total_sources_checked": len(raw_evidence),
-
-        "has_evidence_conflicts": conflict_result["has_conflicts"],
-        "blocking_conflict": conflict_result["blocking_conflict"],
+        "category": (
+            entity.domain
+        ),
+        "successful_sources": (
+            len(sources)
+        ),
+        "total_sources_checked": (
+            len(raw_evidence)
+        ),
+        "has_evidence_conflicts": (
+            conflict_result[
+                "has_conflicts"
+            ]
+        ),
+        "blocking_conflict": (
+            conflict_result[
+                "blocking_conflict"
+            ]
+        ),
         "evidence_warnings": warnings,
-
         "sources": [
             {
-                "provider": source.get("provider"),
-                "trust_level": source.get("trust_level"),
-                "title": source.get("title"),
-                "url": source.get("url"),
+                "provider": source.get(
+                    "provider"
+                ),
+                "trust_level": source.get(
+                    "trust_level"
+                ),
+                "title": source.get(
+                    "title"
+                ),
+                "url": source.get(
+                    "url"
+                ),
+                "instance_of_ids": (
+                    (
+                        source.get(
+                            "metadata"
+                        )
+                        or {}
+                    ).get(
+                        "instance_of_ids",
+                        [],
+                    )
+                ),
             }
             for source in sources
         ],
-
         "draft": draft_result,
     }

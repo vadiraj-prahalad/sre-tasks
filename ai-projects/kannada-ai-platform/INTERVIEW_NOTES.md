@@ -130,3 +130,23 @@ Benefits
 - Better maintainability
 - Easier testing
 - Future extensibility
+
+## Interview Topic
+
+Why create a domain model instead of passing dictionaries?
+
+Answer
+
+A domain model centralizes business meaning.
+
+Instead of passing loosely-defined dictionaries or strings across
+multiple services, every component consumes the same strongly-defined
+object.
+
+Advantages
+
+• Better maintainability
+• Easier testing
+• Easier extension
+• Reduced coupling
+• Better readability

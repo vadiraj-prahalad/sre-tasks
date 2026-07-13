@@ -100,3 +100,23 @@
 ### Architecture
 
 - Began migration towards Canonical Knowledge Model.
+
+## 2026-07-12
+
+### Added
+
+- KnowledgeEntity domain model
+- Entity enrichment service
+- Editorial integration test
+
+### Changed
+
+- Editorial acquisition pipeline now operates on canonical entities.
+- Evidence conflict detection simplified.
+- Metadata propagation improved.
+
+### Fixed
+
+- Integration metadata loss
+- False-positive year conflicts
+- Entity propagation bug

@@ -159,3 +159,24 @@ Most important lesson:
 
 Prompt engineering alone cannot solve language quality.
 A better knowledge model produces better prompts automatically.
+
+# Day Summary
+
+Completed Canonical Knowledge Model.
+
+Major achievements
+
+✓ Introduced immutable KnowledgeEntity
+✓ Added entity enrichment
+✓ Refactored editorial acquisition
+✓ Added integration testing
+✓ Removed false-positive year conflicts
+✓ Fixed pipeline metadata propagation
+
+Key lesson
+
+Architecture should model the domain, not merely move strings between services.
+
+Next milestone
+
+Automatic Entity Type & Domain Inference.

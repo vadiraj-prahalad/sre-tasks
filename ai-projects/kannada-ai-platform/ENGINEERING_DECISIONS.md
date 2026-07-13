@@ -166,3 +166,38 @@ Reason:
 
 Status:
 Approved
+
+# Decision 012 — Introduce KnowledgeEntity
+
+## Problem
+
+The acquisition pipeline passed raw strings between services.
+
+This caused duplicated parsing, inconsistent metadata, and tightly
+coupled downstream components.
+
+## Decision
+
+Introduce an immutable KnowledgeEntity model.
+
+The object becomes the canonical representation of every topic.
+
+## Consequences
+
+Benefits
+
+- One source of truth
+- Easier testing
+- Future knowledge graph support
+- Cleaner prompt generation
+- Better retrieval
+
+Tradeoffs
+
+- Slightly larger model
+- Requires enrichment stage
+
+Decision Status
+
+Accepted
+Frozen

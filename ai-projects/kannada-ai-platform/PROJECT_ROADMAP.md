@@ -171,3 +171,27 @@ Next
 ⬜ Entity Type
 
 ⬜ Replace remaining string-based pipeline
+
+Phase 5 ✅ COMPLETE
+
+Canonical Knowledge Model
+
+Next
+
+Phase 6
+
+Automatic Entity Classification
+
+Goal
+
+KnowledgeEntity should automatically infer
+
+- PERSON
+- PLACE
+- EVENT
+- BOOK
+- FESTIVAL
+- TEMPLE
+- ORGANIZATION
+
+without relying on manual categories.

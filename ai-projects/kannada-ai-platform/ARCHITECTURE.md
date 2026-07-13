@@ -233,3 +233,48 @@ Human Review
 Published Knowledge
 
 KnowledgeEntity will become the single source of truth throughout the platform.
+
+# 2026-07-12 — Canonical Knowledge Model Completed
+
+## Objective
+
+Replace loosely-coupled string-based topic handling with a canonical
+KnowledgeEntity model shared across the editorial acquisition pipeline.
+
+## Major Architecture Changes
+
+User Query
+    ↓
+KnowledgeEntity
+    ↓
+Evidence Collection
+    ↓
+Evidence Validation
+    ↓
+Entity Enrichment
+    ↓
+Editorial Draft
+    ↓
+Human Review
+
+## New Core Components
+
+- app/models/knowledge_entity.py
+- entity_resolution_service.py
+- entity_enrichment_service.py
+
+## Updated Components
+
+- internet_knowledge_service.py
+- evidence_conflict_service.py
+- editorial pipeline integration
+
+## Architectural Principles
+
+• Identity exists independently of evidence.
+• Evidence enriches identity.
+• Editorial generation consumes canonical entities.
+• Human review remains the publication gate.
+
+Status:
+Frozen for Beta v1.

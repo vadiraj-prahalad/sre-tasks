@@ -166,7 +166,7 @@ def run() -> None:
         "Q6387049"
     )
     assert result["entity_type"] == (
-        "GENERAL"
+        "PERSON"
     )
     assert result[
         "blocking_conflict"
@@ -216,7 +216,7 @@ def run() -> None:
         f"{wikidata_source['instance_of_ids']}"
     )
     print(
-        "Expected entity type : GENERAL"
+        "Expected entity type : PERSON"
     )
     print("-" * 72)
     print("Draft:")

@@ -31,6 +31,9 @@ from app.services.internet_providers.wikidata_provider import (
 from app.services.internet_providers.wikipedia_provider import (
     WikipediaProvider,
 )
+from app.services.entity_classification_service import (
+    classify_entity,
+)
 
 
 def collect_topic_evidence(
@@ -494,6 +497,11 @@ def import_topic_as_draft(
         }
 
     entity = enrich_entity(
+        entity=entity,
+        sources=sources,
+    )
+
+    entity = classify_entity(
         entity=entity,
         sources=sources,
     )

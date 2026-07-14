@@ -120,3 +120,32 @@
 - Integration metadata loss
 - False-positive year conflicts
 - Entity propagation bug
+
+## 2026-07-14
+
+### Added
+
+- Deterministic Editorial Validator
+- Kannada content ratio calculation
+- Duplicate paragraph detection
+- Placeholder detection
+- English leakage detection
+- Validation metrics
+- Validation projection for legacy drafts
+- Validation panel in Admin Portal
+
+### Fixed
+
+- Kannada ratio calculation now remains between 0 and 1
+- Removed duplicate ratio calculation logic
+
+### Tests
+
+Added:
+
+- test_editorial_validator.py
+- test_draft_validation_projection.py
+
+Updated:
+
+- test_editorial_pipeline.py

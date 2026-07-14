@@ -195,3 +195,15 @@ KnowledgeEntity should automatically infer
 - ORGANIZATION
 
 without relying on manual categories.
+
+Phase 6
+
+✓ 6.1 Entity Classification
+
+✓ 6.2 Editorial Quality Gate
+
+⬜ 6.3 Editorial Policy Engine
+
+⬜ 6.4 Citation-aware Articles
+
+⬜ 6.5 Knowledge Graph

@@ -150,3 +150,27 @@ Advantages
 • Easier extension
 • Reduced coupling
 • Better readability
+
+# Editorial Validator
+
+Interview Question
+
+How do you prevent hallucinated AI content from entering production?
+
+Answer
+
+I separated generation from validation.
+
+The LLM generates content.
+
+Python performs deterministic validation before the draft reaches the CMS.
+
+Validation includes
+
+- structure
+- language
+- duplication
+- placeholders
+- quality metrics
+
+This creates defense-in-depth instead of trusting AI output.

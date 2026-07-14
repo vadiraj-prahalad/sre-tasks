@@ -87,6 +87,42 @@
             margin: 15px 0;
             font-weight: bold;
         }
+            .validation-panel {
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 6px;
+            background: #f3f5f7;
+            border: 1px solid #d8dde3;
+        }
+
+        .validation-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .validation-pass {
+            color: #176b38;
+        }
+
+        .validation-fail {
+            color: #a93226;
+        }
+
+        .validation-metrics {
+            color: #444;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .validation-warning {
+            margin-top: 8px;
+            color: #8a5a00;
+        }
+
+        .validation-error {
+            margin-top: 8px;
+            color: #a93226;
+        }
     </style>
 </head>
 
@@ -98,6 +134,81 @@
     <div id="drafts"></div>
 
     <script>
+                function renderValidation(validation) {
+            if (!validation) {
+                return `
+                    <div class="validation-panel">
+                        <div class="validation-header">
+                            Editorial validation: Not applicable
+                        </div>
+                    </div>
+                `;
+            }
+
+            const metrics = validation.metrics || {};
+            const warnings = validation.warnings || [];
+            const errors = validation.errors || [];
+
+            const ratio = Number(
+                metrics.kannada_ratio || 0
+            );
+
+            const kannadaPercentage = (
+                ratio * 100
+            ).toFixed(1);
+
+            const statusClass = validation.valid
+                ? "validation-pass"
+                : "validation-fail";
+
+            const statusText = validation.valid
+                ? "PASS"
+                : "FAIL";
+
+            const warningHtml = warnings.length
+                ? `
+                    <div class="validation-warning">
+                        Warnings:
+                        ${warnings
+                            .map(item => escapeHtml(item))
+                            .join("<br>")}
+                    </div>
+                `
+                : "";
+
+            const errorHtml = errors.length
+                ? `
+                    <div class="validation-error">
+                        Errors:
+                        ${errors
+                            .map(item => escapeHtml(item))
+                            .join("<br>")}
+                    </div>
+                `
+                : "";
+
+            return `
+                <div class="validation-panel">
+                    <div class="validation-header ${statusClass}">
+                        Editorial validation: ${statusText}
+                    </div>
+
+                    <div class="validation-metrics">
+                        Kannada content: ${kannadaPercentage}% |
+                        Sections: ${metrics.section_count || 0} |
+                        Content sections:
+                        ${metrics.content_section_count || 0} |
+                        Content blocks:
+                        ${metrics.content_block_count || 0} |
+                        Duplicate blocks:
+                        ${metrics.duplicate_block_count || 0}
+                    </div>
+
+                    ${warningHtml}
+                    ${errorHtml}
+                </div>
+            `;
+        }
         async function loadDrafts() {
             try {
                 const response = await fetch("/admin/drafts");
@@ -125,6 +236,9 @@
                                     Hits: ${d.hit_count} |
                                     Updated: ${escapeHtml(d.updated_at)}
                                 </div>
+                                    ${renderValidation(
+                                    d.editorial_validation
+                                )}
 
                                 <label>Approved Question</label>
                                 <input

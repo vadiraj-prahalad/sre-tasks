@@ -201,3 +201,33 @@ Decision Status
 
 Accepted
 Frozen
+
+## Decision 024
+
+Title
+
+Deterministic validation before human review
+
+Problem
+
+LLMs occasionally generate structurally invalid encyclopedia articles.
+
+Decision
+
+Introduce a deterministic validation layer before draft storage.
+
+Validator responsibilities
+
+- Structure validation
+- Kannada language ratio
+- Duplicate detection
+- Placeholder detection
+- English leakage
+
+Reason
+
+Editorial quality should never depend solely on the LLM.
+
+Status
+
+Accepted

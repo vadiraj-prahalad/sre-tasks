@@ -171,3 +171,43 @@ Validated
 Milestone Status
 
 Frozen
+
+Current Phase
+
+Phase 6
+
+Completed Milestones
+
+14
+
+Current Components
+
+Entity Resolution
+
+Evidence Collection
+
+Conflict Detection
+
+Editorial Draft Generation
+
+Editorial Validator
+
+Draft Projection
+
+Admin Review Portal
+
+Publishing Pipeline
+
+Test Suites
+
+Editorial Validator
+
+Editorial Pipeline
+
+Editorial Profiles
+
+Entity Resolution
+
+Entity Classification
+
+Draft Projection

@@ -180,3 +180,47 @@ Architecture should model the domain, not merely move strings between services.
 Next milestone
 
 Automatic Entity Type & Domain Inference.
+
+# 2026-07-14
+
+Objective
+
+Introduce a deterministic editorial quality gate.
+
+Completed
+
+✓ Editorial validator service
+
+✓ Pipeline integration
+
+✓ Draft validation metadata
+
+✓ Admin validation panel
+
+✓ Validation projection
+
+✓ Regression tests
+
+Issue encountered
+
+Kannada ratio exceeded 1.0.
+
+Root cause
+
+Kannada characters were counted differently from alphabetic characters.
+
+Resolution
+
+Calculate
+
+Kannada alphabetic letters
+---------------------------
+Total alphabetic letters
+
+Result
+
+Ratio now always remains between 0 and 1.
+
+Outcome
+
+Editorial drafts now undergo deterministic validation before reaching reviewers.

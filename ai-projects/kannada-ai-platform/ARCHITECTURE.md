@@ -278,3 +278,58 @@ Human Review
 
 Status:
 Frozen for Beta v1.
+
+# Phase 6.2 — Deterministic Editorial Quality Gate
+
+The editorial pipeline now includes a deterministic validation layer between AI generation and human review.
+
+Updated pipeline
+
+Internet
+    │
+    ▼
+Entity Resolution
+    │
+    ▼
+Evidence Collection
+    │
+    ▼
+Evidence Cleaning
+    │
+    ▼
+Conflict Detection
+    │
+    ▼
+Entity Enrichment
+    │
+    ▼
+Entity Classification
+    │
+    ▼
+Editorial Draft (LLM)
+    │
+    ▼
+Editorial Validator
+    │
+    ▼
+Draft Database
+    │
+    ▼
+Admin Review Portal
+    │
+    ▼
+Human Approval
+    │
+    ▼
+Knowledge Base
+
+The Editorial Validator performs deterministic checks before drafts enter the CMS workflow.
+
+Validation includes:
+
+- Required article sections
+- Duplicate paragraph detection
+- Placeholder detection
+- English leakage detection
+- Kannada content ratio validation
+- Minimum article size

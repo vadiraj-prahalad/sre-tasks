@@ -37,6 +37,9 @@ from app.services.entity_classification_service import (
 from app.prompts.editorial.output_profiles import (
     OUTPUT_PROFILE_ENCYCLOPEDIA_ARTICLE,
 )
+from app.services.editorial_validator_service import (
+    validate_editorial_article,
+)
 
 
 def collect_topic_evidence(
@@ -533,6 +536,68 @@ def import_topic_as_draft(
         )
     )
 
+    validation_result = (
+        validate_editorial_article(
+            review_content[
+                "suggested_answer"
+            ]
+        )
+    )
+
+    if not validation_result["valid"]:
+        return {
+            "status": (
+                "editorial_validation_failed"
+            ),
+            "topic": best_title,
+            "original_topic": (
+                entity.original_query
+            ),
+            "resolved_topic": (
+                entity.resolved_topic
+            ),
+            "entity_type": (
+                entity.entity_type
+            ),
+            "domain": (
+                entity.domain
+            ),
+            "wikidata_id": (
+                entity.wikidata_id
+            ),
+            "successful_sources": (
+                len(sources)
+            ),
+            "total_sources_checked": (
+                len(raw_evidence)
+            ),
+            "blocking_conflict": False,
+            "validation_errors": (
+                validation_result[
+                    "errors"
+                ]
+            ),
+            "validation_warnings": (
+                validation_result[
+                    "warnings"
+                ]
+            ),
+            "validation_metrics": (
+                validation_result[
+                    "metrics"
+                ]
+            ),
+            "generated_article": (
+                review_content[
+                    "suggested_answer"
+                ]
+            ),
+            "message": (
+                "Generated article did not meet "
+                "the minimum editorial quality gate."
+            ),
+        }
+
     draft_result = (
         save_draft_answer(
             question,
@@ -625,6 +690,21 @@ def import_topic_as_draft(
             ]
         ),
         "evidence_warnings": warnings,
+
+        "editorial_validation": {
+            "valid": True,
+            "warnings": (
+                validation_result[
+                    "warnings"
+                ]
+            ),
+            "metrics": (
+                validation_result[
+                    "metrics"
+                ]
+            ),
+        },
+
         "sources": [
             {
                 "provider": source.get(

@@ -142,14 +142,42 @@ def approve_draft(draft_id: int, payload: ApproveDraftRequest):
             category=category,
         )
 
+        if (
+            article_result["status"]
+            == "editorial_validation_failed"
+        ):
+            update_draft_status(
+                draft_id=draft_id,
+                status="draft",
+            )
+
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "message": (
+                        "The edited article failed "
+                        "editorial validation."
+                    ),
+                    "validation": (
+                        article_result[
+                            "validation"
+                        ]
+                    ),
+                },
+            )
+
         if article_result["status"] != "article_created":
-            update_draft_status(draft_id, "publish_failed")
+            update_draft_status(
+                draft_id=draft_id,
+                status="publish_failed",
+            )
 
             raise HTTPException(
                 status_code=409,
                 detail=(
                     "Draft could not enter the publishing pipeline. "
-                    f"Current status: {article_result.get('draft_status')}"
+                    f"Current status: "
+                    f"{article_result.get('draft_status')}"
                 ),
             )
 

@@ -86,6 +86,7 @@
         .message {
             margin: 15px 0;
             font-weight: bold;
+            white-space: pre-line;
         }
             .validation-panel {
             margin: 12px 0;
@@ -351,11 +352,50 @@
                 const responseData = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(
-                        responseData.detail ||
-                        `Approval failed with status ${response.status}.`
-                    );
-                }
+        const detail = responseData.detail;
+
+        if (
+            response.status === 422 &&
+            detail &&
+            typeof detail === "object"
+        ) {
+            const validation = (
+                detail.validation || {}
+            );
+
+            const errors = (
+                validation.errors || []
+            );
+
+            const warnings = (
+                validation.warnings || []
+            );
+
+            const messages = [
+                detail.message ||
+                "The edited article failed editorial validation.",
+                ...errors.map(
+                    item => `Error: ${item}`
+                ),
+                ...warnings.map(
+                    item => `Warning: ${item}`
+                ),
+            ];
+
+            throw new Error(
+                messages.join("\n")
+            );
+        }
+
+    throw new Error(
+        typeof detail === "string"
+            ? detail
+            : (
+                "Approval failed with " +
+                `status ${response.status}.`
+            )
+    );
+}
 
                 showMessage(
                     `Draft ${id} approved and published successfully. ` +

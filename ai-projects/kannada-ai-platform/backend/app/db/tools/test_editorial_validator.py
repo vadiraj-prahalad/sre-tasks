@@ -86,6 +86,14 @@ def run() -> None:
         valid_result["errors"]
     )
 
+    assert (
+        0.0
+        <= valid_result["metrics"]["kannada_ratio"]
+        <= 1.0
+    ), (
+        "Kannada ratio must remain between 0 and 1."
+    )
+
     duplicate_result = (
         validate_editorial_article(
             DUPLICATE_ARTICLE
@@ -139,6 +147,7 @@ He made important contributions to literature.
     print("Editorial Validator Test")
     print("=" * 72)
     print("Valid Kannada article         : PASS")
+    print("Kannada ratio validation      : PASS")
     print("Duplicate block detection     : PASS")
     print("Missing section detection     : PASS")
     print("Placeholder detection         : PASS")

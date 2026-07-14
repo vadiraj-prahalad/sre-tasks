@@ -97,7 +97,6 @@ def _extract_content_blocks(
     """
 
     blocks: list[str] = []
-
     paragraph_lines: list[str] = []
 
     def flush_paragraph() -> None:
@@ -212,7 +211,9 @@ def validate_editorial_article(
                 "character_count": 0,
                 "section_count": 0,
                 "content_section_count": 0,
+                "content_block_count": 0,
                 "duplicate_block_count": 0,
+                "kannada_ratio": 0.0,
             },
         }
 
@@ -250,8 +251,7 @@ def validate_editorial_article(
 
     populated_content_sections = [
         section_name
-        for section_name
-        in OPTIONAL_CONTENT_SECTIONS
+        for section_name in OPTIONAL_CONTENT_SECTIONS
         if sections.get(
             section_name,
             "",
@@ -286,20 +286,25 @@ def validate_editorial_article(
             "Article content is too short for encyclopedia review."
         )
 
-    kannada_character_count = len(
-        KANNADA_CHARACTER_PATTERN.findall(
-            normalized_content
-        )
+    alphabetic_characters = [
+        character
+        for character in normalized_content
+        if character.isalpha()
+    ]
+
+    kannada_letter_count = sum(
+        1
+        for character in alphabetic_characters
+        if "\u0C80" <= character <= "\u0CFF"
     )
 
-    alphabetic_character_count = sum(
-        character.isalpha()
-        for character in normalized_content
+    alphabetic_character_count = len(
+        alphabetic_characters
     )
 
     if alphabetic_character_count:
         kannada_ratio = (
-            kannada_character_count
+            kannada_letter_count
             / alphabetic_character_count
         )
     else:

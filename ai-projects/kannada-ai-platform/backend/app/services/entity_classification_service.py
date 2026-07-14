@@ -10,19 +10,18 @@ from app.models.knowledge_entity import KnowledgeEntity
 
 ENTITY_TYPE_GENERAL = "GENERAL"
 ENTITY_TYPE_PERSON = "PERSON"
+ENTITY_TYPE_PLACE = "PLACE"
+ENTITY_TYPE_ORGANIZATION = "ORGANIZATION"
 
 
 # ------------------------------------------------------------------
 # Trusted Wikidata type mappings
 # ------------------------------------------------------------------
 
-# Q5 = human
-#
-# This is intentionally a small Beta v1 mapping.
-# Additional mappings should be added only with verified ontology
-# evidence and focused tests.
 WIKIDATA_INSTANCE_OF_TYPE_MAP: dict[str, str] = {
     "Q5": ENTITY_TYPE_PERSON,
+    "Q515": ENTITY_TYPE_PLACE,
+    "Q43229": ENTITY_TYPE_ORGANIZATION,
 }
 
 

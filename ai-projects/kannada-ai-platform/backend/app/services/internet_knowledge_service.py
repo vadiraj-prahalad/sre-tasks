@@ -34,6 +34,9 @@ from app.services.internet_providers.wikipedia_provider import (
 from app.services.entity_classification_service import (
     classify_entity,
 )
+from app.prompts.editorial.output_profiles import (
+    OUTPUT_PROFILE_ENCYCLOPEDIA_ARTICLE,
+)
 
 
 def collect_topic_evidence(
@@ -306,6 +309,9 @@ def build_review_draft_answer(
             evidence_text=evidence_text,
             conflict_instructions=(
                 conflict_instructions
+            ),
+            output_profile=(
+                OUTPUT_PROFILE_ENCYCLOPEDIA_ARTICLE
             ),
         )
     )

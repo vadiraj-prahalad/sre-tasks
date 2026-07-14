@@ -6,18 +6,19 @@ Audience:
 - School students
 - General readers
 
-Output:
-- Kannada only
-- Textbook style
-- 3–5 sentences
-- Plain paragraphs
-- No headings
-- No markdown
-- No URLs
-- No provider names
+Language:
+- Kannada only, except unavoidable proper names.
+- Use natural, standard Kannada.
+- Use a neutral textbook or encyclopedia tone.
+
+Evidence:
+- Use only the supplied evidence.
+- Do not invent unsupported facts.
+- Omit uncertain or contradictory claims.
+- Preserve cautious language for traditions and beliefs.
 
 Behavior:
-- Return only the final article.
+- Return only the requested final content.
 - Do not reveal reasoning.
-- Do not invent unsupported facts.
+- Do not mention prompts, providers, internal rules or model behavior.
 """

@@ -4,7 +4,9 @@ import re
 import sqlite3
 from pathlib import Path
 
-from app.services.embedding_service import get_embedding
+from app.services.embedding_service import (
+    get_embedding,
+)
 
 
 DB_PATH = (
@@ -55,7 +57,10 @@ def cosine_similarity(
         )
     )
 
-    if magnitude_a == 0 or magnitude_b == 0:
+    if (
+        magnitude_a == 0
+        or magnitude_b == 0
+    ):
         return 0.0
 
     return (
@@ -70,9 +75,8 @@ def _normalize_terms(
     """
     Extract meaningful lowercase terms for lexical matching.
 
-    Generic Kannada question words describe the question structure,
-    not the identity of the requested topic. They must therefore not
-    influence retrieval ranking.
+    Generic Kannada question words describe question structure rather
+    than the requested entity, so they must not influence ranking.
     """
 
     normalized_text = re.sub(
@@ -92,7 +96,9 @@ def _normalize_terms(
         if word in GENERIC_QUERY_WORDS:
             continue
 
-        terms.append(word)
+        terms.append(
+            word
+        )
 
     return terms
 
@@ -134,6 +140,8 @@ def keyword_bonus(
 def retrieve_chunks(
     question: str,
     limit: int = 3,
+    *,
+    evaluation_mode: bool = False,
 ) -> list[dict]:
     """
     Retrieve the highest-ranking knowledge chunks.
@@ -142,10 +150,12 @@ def retrieve_chunks(
 
     1. Semantic embedding similarity.
     2. Meaningful lexical overlap with chunk content.
-    3. Meaningful lexical overlap with the document title.
+    3. Meaningful lexical overlap with document title.
 
-    Final scores are capped at 1.0 so confidence thresholds remain
-    interpretable.
+    Raw scores are used for ranking so score differences are preserved.
+
+    Bounded scores are exposed to confidence and API consumers so
+    operational thresholds remain interpretable.
     """
 
     question_embedding = get_embedding(
@@ -180,11 +190,17 @@ def retrieve_chunks(
     scored_chunks: list[dict] = []
 
     for row in rows:
-        chunk_text = row[0]
+        chunk_text = (
+            row[0] or ""
+        )
+
         chunk_embedding = json.loads(
             row[1]
         )
-        title = row[2]
+
+        title = (
+            row[2] or ""
+        )
 
         semantic_score = cosine_similarity(
             question_embedding,
@@ -201,17 +217,25 @@ def retrieve_chunks(
             target_text=title,
         )
 
-        final_score = min(
+        raw_score = (
             semantic_score
             + content_bonus
-            + title_bonus,
+            + title_bonus
+        )
+
+        bounded_score = min(
+            max(
+                raw_score,
+                0.0,
+            ),
             1.0,
         )
 
         scored_chunks.append(
             {
                 "chunk_text": chunk_text,
-                "score": final_score,
+                "score": bounded_score,
+                "raw_score": raw_score,
                 "semantic_score": (
                     semantic_score
                 ),
@@ -228,29 +252,42 @@ def retrieve_chunks(
         )
 
     scored_chunks.sort(
-        key=lambda item: item["score"],
+        key=lambda item: (
+            item["raw_score"],
+            item["title_bonus"],
+            item["keyword_bonus"],
+            item["semantic_score"],
+        ),
         reverse=True,
     )
 
     if not scored_chunks:
         return []
+    
+    if evaluation_mode:
+        return scored_chunks[:limit]
 
-    top_score = scored_chunks[0][
-        "score"
-    ]
+    top_raw_score = (
+        scored_chunks[0][
+            "raw_score"
+        ]
+    )
 
-    second_score = (
-        scored_chunks[1]["score"]
+    second_raw_score = (
+        scored_chunks[1][
+            "raw_score"
+        ]
         if len(scored_chunks) > 1
         else 0.0
     )
 
     score_gap = (
-        top_score - second_score
+        top_raw_score
+        - second_raw_score
     )
 
     if (
-        top_score >= 0.85
+        top_raw_score >= 0.85
         or score_gap >= 0.05
     ):
         return scored_chunks[:1]

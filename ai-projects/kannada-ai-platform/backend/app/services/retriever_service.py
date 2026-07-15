@@ -1,46 +1,161 @@
 import json
 import math
+import re
 import sqlite3
 from pathlib import Path
 
 from app.services.embedding_service import get_embedding
 
 
-DB_PATH = Path(__file__).resolve().parent.parent / "db" / "knowledge.db"
+DB_PATH = (
+    Path(__file__).resolve().parent.parent
+    / "db"
+    / "knowledge.db"
+)
+
+GENERIC_QUERY_WORDS = {
+    "ಯಾರು",
+    "ಏನು",
+    "ಎಂದರೇನು",
+    "ಬಗ್ಗೆ",
+    "ಹೇಳಿ",
+    "ಜೊತೆ",
+    "ಮತ್ತು",
+    "ಯಾವುದು",
+    "ಹೇಗೆ",
+    "ಏಕೆ",
+}
 
 
-def cosine_similarity(vector_a: list[float], vector_b: list[float]) -> float:
-    dot_product = sum(a * b for a, b in zip(vector_a, vector_b))
-    magnitude_a = math.sqrt(sum(a * a for a in vector_a))
-    magnitude_b = math.sqrt(sum(b * b for b in vector_b))
+def cosine_similarity(
+    vector_a: list[float],
+    vector_b: list[float],
+) -> float:
+    """
+    Calculate cosine similarity between two embedding vectors.
+    """
+
+    dot_product = sum(
+        value_a * value_b
+        for value_a, value_b
+        in zip(vector_a, vector_b)
+    )
+
+    magnitude_a = math.sqrt(
+        sum(
+            value * value
+            for value in vector_a
+        )
+    )
+
+    magnitude_b = math.sqrt(
+        sum(
+            value * value
+            for value in vector_b
+        )
+    )
 
     if magnitude_a == 0 or magnitude_b == 0:
         return 0.0
 
-    return dot_product / (magnitude_a * magnitude_b)
+    return (
+        dot_product
+        / (magnitude_a * magnitude_b)
+    )
 
 
-def keyword_bonus(search_text: str, chunk_text: str) -> float:
-    keywords = [
-        word.strip().lower()
-        for word in search_text.split()
-        if len(word.strip()) >= 3
-    ]
+def _normalize_terms(
+    text: str,
+) -> list[str]:
+    """
+    Extract meaningful lowercase terms for lexical matching.
 
-    chunk_lower = chunk_text.lower()
-    matched_keywords = 0
+    Generic Kannada question words describe the question structure,
+    not the identity of the requested topic. They must therefore not
+    influence retrieval ranking.
+    """
 
-    for keyword in keywords:
-        if keyword in chunk_lower:
-            matched_keywords += 1
+    normalized_text = re.sub(
+        r"[^\w\u0C80-\u0CFF]+",
+        " ",
+        (text or "").lower(),
+    )
 
-    return matched_keywords * 0.05
+    terms: list[str] = []
+
+    for raw_word in normalized_text.split():
+        word = raw_word.strip()
+
+        if len(word) < 3:
+            continue
+
+        if word in GENERIC_QUERY_WORDS:
+            continue
+
+        terms.append(word)
+
+    return terms
 
 
-def retrieve_chunks(question: str, limit: int = 3) -> list[dict]:
-    question_embedding = get_embedding(question)
+def keyword_bonus(
+    search_text: str,
+    target_text: str,
+) -> float:
+    """
+    Reward meaningful lexical overlap.
 
-    connection = sqlite3.connect(DB_PATH)
+    Every meaningful query term found in the target receives a small,
+    controlled bonus. Generic question words are ignored.
+
+    The bonus is capped so lexical matching supports semantic retrieval
+    without overwhelming the embedding score.
+    """
+
+    keywords = _normalize_terms(
+        search_text
+    )
+
+    target_lower = (
+        target_text or ""
+    ).lower()
+
+    matched_keywords = sum(
+        1
+        for keyword in keywords
+        if keyword in target_lower
+    )
+
+    return min(
+        matched_keywords * 0.08,
+        0.24,
+    )
+
+
+def retrieve_chunks(
+    question: str,
+    limit: int = 3,
+) -> list[dict]:
+    """
+    Retrieve the highest-ranking knowledge chunks.
+
+    Ranking combines:
+
+    1. Semantic embedding similarity.
+    2. Meaningful lexical overlap with chunk content.
+    3. Meaningful lexical overlap with the document title.
+
+    Final scores are capped at 1.0 so confidence thresholds remain
+    interpretable.
+    """
+
+    question_embedding = get_embedding(
+        question
+    )
+
+    connection = sqlite3.connect(
+        DB_PATH
+    )
+
     cursor = connection.cursor()
 
     cursor.execute(
@@ -52,47 +167,92 @@ def retrieve_chunks(question: str, limit: int = 3) -> list[dict]:
             documents.source_name,
             documents.source_url
         FROM chunks
-        JOIN documents ON chunks.document_id = documents.id
+        JOIN documents
+            ON chunks.document_id = documents.id
         WHERE chunks.embedding IS NOT NULL
+          AND documents.status = 'active'
         """
     )
 
     rows = cursor.fetchall()
     connection.close()
 
-    scored_chunks = []
+    scored_chunks: list[dict] = []
 
     for row in rows:
         chunk_text = row[0]
-        chunk_embedding = json.loads(row[1])
+        chunk_embedding = json.loads(
+            row[1]
+        )
+        title = row[2]
 
-        semantic_score = cosine_similarity(question_embedding, chunk_embedding)
-        bonus = keyword_bonus(question, chunk_text)
-        final_score = semantic_score + bonus
+        semantic_score = cosine_similarity(
+            question_embedding,
+            chunk_embedding,
+        )
+
+        content_bonus = keyword_bonus(
+            search_text=question,
+            target_text=chunk_text,
+        )
+
+        title_bonus = keyword_bonus(
+            search_text=question,
+            target_text=title,
+        )
+
+        final_score = min(
+            semantic_score
+            + content_bonus
+            + title_bonus,
+            1.0,
+        )
 
         scored_chunks.append(
             {
                 "chunk_text": chunk_text,
                 "score": final_score,
-                "semantic_score": semantic_score,
-                "keyword_bonus": bonus,
-                "title": row[2],
+                "semantic_score": (
+                    semantic_score
+                ),
+                "keyword_bonus": (
+                    content_bonus
+                ),
+                "title_bonus": (
+                    title_bonus
+                ),
+                "title": title,
                 "source_name": row[3],
                 "source_url": row[4],
             }
         )
 
-    scored_chunks.sort(key=lambda item: item["score"], reverse=True)
+    scored_chunks.sort(
+        key=lambda item: item["score"],
+        reverse=True,
+    )
 
     if not scored_chunks:
         return []
 
-    top_score = scored_chunks[0]["score"]
+    top_score = scored_chunks[0][
+        "score"
+    ]
 
-    second_score = scored_chunks[1]["score"] if len(scored_chunks) > 1 else 0
-    score_gap = top_score - second_score
+    second_score = (
+        scored_chunks[1]["score"]
+        if len(scored_chunks) > 1
+        else 0.0
+    )
 
-    if top_score >= 0.85 or score_gap >= 0.05:
+    score_gap = (
+        top_score - second_score
+    )
+
+    if (
+        top_score >= 0.85
+        or score_gap >= 0.05
+    ):
         return scored_chunks[:1]
 
     return scored_chunks[:limit]

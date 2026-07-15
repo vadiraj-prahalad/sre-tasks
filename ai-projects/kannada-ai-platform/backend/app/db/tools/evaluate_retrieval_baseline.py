@@ -146,6 +146,9 @@ def evaluate() -> dict:
     scored_result_count = 0
     failures: list[dict] = []
 
+    top_source_counts: dict[str, int] = {}
+    top_provenance_counts: dict[str, int] = {}
+
     print("=" * 88)
     print("Retrieval Baseline Evaluation")
     print("=" * 88)
@@ -213,11 +216,90 @@ def evaluate() -> dict:
 
             scored_result_count += 1
 
-        top_title = (
-            results[0].get("title")
+        top_result = (
+            results[0]
             if results
+            else {}
+        )
+
+        top_title = (
+            top_result.get("title")
+            if top_result
             else None
         )
+
+        top_source_name = str(
+            top_result.get(
+                "source_name",
+                "none",
+            )
+        )
+
+        top_provenance = str(
+            top_result.get(
+                "source_url",
+            )
+            or "not_recorded"
+        )
+
+        top_semantic_score = float(
+            top_result.get(
+                "semantic_score",
+                0.0,
+            )
+        )
+
+        top_content_bonus = float(
+            top_result.get(
+                "keyword_bonus",
+                0.0,
+            )
+        )
+
+        top_title_bonus = float(
+            top_result.get(
+                "title_bonus",
+                0.0,
+            )
+        )
+
+        top_raw_score = float(
+            top_result.get(
+                "raw_score",
+                top_result.get(
+                    "score",
+                    0.0,
+                ),
+            )
+        )
+
+        top_bounded_score = float(
+            top_result.get(
+                "score",
+                0.0,
+            )
+        )
+
+        if results:
+            top_source_counts[
+                top_source_name
+            ] = (
+                top_source_counts.get(
+                    top_source_name,
+                    0,
+                )
+                + 1
+            )
+
+            top_provenance_counts[
+                top_provenance
+            ] = (
+                top_provenance_counts.get(
+                    top_provenance,
+                    0,
+                )
+                + 1
+            )
 
         status = (
             "PASS"
@@ -244,6 +326,27 @@ def evaluate() -> dict:
             f"Rank     : {rank}"
         )
         print(
+            f"Semantic : {top_semantic_score:.4f}"
+        )
+        print(
+            f"Content  : {top_content_bonus:.4f}"
+        )
+        print(
+            f"Title    : {top_title_bonus:.4f}"
+        )
+        print(
+            f"Raw score: {top_raw_score:.4f}"
+        )
+        print(
+            f"Score    : {top_bounded_score:.4f}"
+        )
+        print(
+            f"Source   : {top_source_name}"
+        )
+        print(
+            f"Provenance: {top_provenance}"
+        )
+        print(
             f"Latency  : {latency_ms:.2f} ms"
         )
         print(
@@ -256,19 +359,45 @@ def evaluate() -> dict:
             or rank > 3
         ):
             failures.append(
-                {
-                    "question": (
-                        case.question
-                    ),
-                    "expected": (
-                        case.acceptable_title_terms
-                    ),
-                    "top_title": (
-                        top_title
-                    ),
-                    "rank": rank,
-                }
-            )
+        {
+            "question": (
+                case.question
+            ),
+            "expected": (
+                case.acceptable_title_terms
+            ),
+            "top_title": (
+                top_title
+            ),
+            "rank": rank,
+            "semantic_score": round(
+                top_semantic_score,
+                4,
+            ),
+            "content_bonus": round(
+                top_content_bonus,
+                4,
+            ),
+            "title_bonus": round(
+                top_title_bonus,
+                4,
+            ),
+            "raw_score": round(
+                top_raw_score,
+                4,
+            ),
+            "bounded_score": round(
+                top_bounded_score,
+                4,
+            ),
+            "source_name": (
+                top_source_name
+            ),
+            "provenance": (
+                top_provenance
+            ),
+        }
+    )
 
     total = len(
         TEST_CASES
@@ -355,10 +484,25 @@ def evaluate() -> dict:
         "Average title bonus : "
         f"{average_title_bonus:.4f}"
     )
-    print(
-        f"Failures            : "
-        f"{len(failures)}"
-    )
+    print("-" * 88)
+    print("Top-result source distribution")
+
+    for source_name, count in sorted(
+        top_source_counts.items()
+    ):
+        print(
+            f"- {source_name}: {count}"
+        )
+
+    print("-" * 88)
+    print("Top-result provenance distribution")
+
+    for provenance, count in sorted(
+        top_provenance_counts.items()
+    ):
+        print(
+            f"- {provenance}: {count}"
+        )
 
     if failures:
         print("-" * 88)
@@ -393,6 +537,12 @@ def evaluate() -> dict:
         ),
         "average_title_bonus": (
             average_title_bonus
+        ),
+        "top_source_counts": (
+        top_source_counts
+        ),
+        "top_provenance_counts": (
+            top_provenance_counts
         ),
         "failures": failures,
         "success": not failures,

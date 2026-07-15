@@ -263,7 +263,7 @@ def retrieve_chunks(
 
     if not scored_chunks:
         return []
-    
+
     if evaluation_mode:
         return scored_chunks[:limit]
 

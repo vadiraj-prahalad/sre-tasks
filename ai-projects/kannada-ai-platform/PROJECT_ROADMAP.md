@@ -207,3 +207,39 @@ Phase 6
 ⬜ 6.4 Citation-aware Articles
 
 ⬜ 6.5 Knowledge Graph
+
+# Phase 6.2B — Retrieval Quality Foundation
+
+Status:
+
+COMPLETE
+
+Completed
+
+✓ Hybrid Retriever Ranking V1
+
+✓ Retrieval Baseline Evaluator
+
+✓ Provenance-aware Developer Trace
+
+✓ Retrieval observability
+
+✓ Canonical Rajkumar aliases
+
+✓ Retrieval regression coverage
+
+---
+
+# Phase 6.2C — Entity-Aware Retrieval
+
+Status:
+
+NEXT
+
+Goals
+
+- use canonical entity identity during retrieval
+- reduce retrieval ambiguity
+- improve multilingual retrieval
+- preserve deterministic orchestration
+- avoid heuristic growth

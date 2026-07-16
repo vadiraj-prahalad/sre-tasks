@@ -224,3 +224,62 @@ Ratio now always remains between 0 and 1.
 Outcome
 
 Editorial drafts now undergo deterministic validation before reaching reviewers.
+
+# 2026-07-15
+
+## Objective
+
+Improve retrieval quality without introducing unnecessary complexity.
+
+## Completed
+
+✓ Hybrid Retriever Ranking V1 stabilized
+
+✓ Retrieval Baseline Evaluator
+
+✓ Provenance-aware retrieval diagnostics
+
+✓ Canonical Rajkumar aliases
+
+✓ Retrieval observability
+
+## Major Investigation
+
+The Kuvempu ranking regression initially appeared to be an embedding problem.
+
+Investigation confirmed:
+
+- document existed;
+- chunk existed;
+- embedding existed;
+- indexing was correct.
+
+Root cause:
+
+Ranking behaviour.
+
+The retriever was rewarding generic Kannada question words rather than meaningful entity overlap.
+
+Generic lexical terms were removed from scoring.
+
+Hybrid ranking now combines:
+
+- semantic similarity;
+- content overlap;
+- title overlap.
+
+## Major Lesson
+
+Measure retrieval before optimizing it.
+
+Architecture improvements should be driven by measurable evidence rather than intuition.
+
+## Outcome
+
+Retrieval became easier to debug while preserving deterministic behaviour.
+
+End-to-end RAG evaluation remained fully successful.
+
+## Next Milestone
+
+Entity-aware retrieval using canonical entities.

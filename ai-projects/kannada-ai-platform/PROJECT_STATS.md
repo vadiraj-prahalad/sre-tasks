@@ -211,3 +211,61 @@ Entity Resolution
 Entity Classification
 
 Draft Projection
+
+# Statistics Update — 2026-07-15
+
+## Retrieval
+
+Hybrid Ranking
+
+Version:
+
+V1
+
+Hit@1
+
+90%
+
+Hit@3
+
+90%
+
+Mean Reciprocal Rank
+
+0.900
+
+Average Retrieval Latency
+
+≈50 ms
+
+End-to-End RAG Evaluation
+
+10 / 10 Passed
+
+## Observability
+
+Developer Trace
+
+Enabled
+
+Retrieval Provenance
+
+Enabled
+
+Score Breakdown
+
+Enabled
+
+## Current Architecture Status
+
+Knowledge Model ............... Frozen
+
+Editorial Pipeline ............ Stable
+
+Hybrid Retrieval .............. Stable
+
+Retrieval Observability ....... Stable
+
+Entity Resolution ............. Stable
+
+Knowledge Graph ............... Planned

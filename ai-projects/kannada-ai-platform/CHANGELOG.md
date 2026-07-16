@@ -149,3 +149,38 @@ Added:
 Updated:
 
 - test_editorial_pipeline.py
+
+## 2026-07-15
+
+### Added
+
+- Retrieval Baseline Evaluator
+- Provenance-aware retrieval diagnostics
+- Retrieval score component reporting
+- Retrieval source distribution reporting
+- Retrieval provenance distribution reporting
+- Canonical Dr Rajkumar entity aliases
+- Expanded entity-resolution regression tests
+
+### Improved
+
+- Hybrid Retriever Ranking V1
+- Retrieval observability
+- Developer Trace diagnostics
+- Canonical entity resolution coverage
+- Retrieval evaluation reporting
+
+### Fixed
+
+- Kuvempu retrieval ranking regression
+- Mysore Palace ranking ambiguity
+- Generic Kannada question-word lexical scoring
+- Retrieval score normalization
+- Rajkumar alias resolution consistency
+
+### Validation
+
+- Retriever ranking tests passed
+- Entity resolution regression tests passed
+- Retrieval baseline evaluation completed
+- End-to-end RAG evaluation passed (10/10)

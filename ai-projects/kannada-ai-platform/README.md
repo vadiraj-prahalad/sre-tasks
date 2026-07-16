@@ -90,3 +90,25 @@ Recent improvements include:
 - Better textbook-style Kannada generation
 
 Current focus is improving the semantic quality of the knowledge pipeline before scaling to 1,000+ curated Kannada topics.
+
+## Recent Progress (2026-07-15)
+
+The platform completed its Retrieval Quality Foundation milestone.
+
+Major improvements include:
+
+- Hybrid Retriever Ranking V1
+- Retrieval Baseline Evaluator
+- Provenance-aware Developer Trace
+- Canonical entity alias expansion
+- Retrieval observability
+
+The current retrieval pipeline combines:
+
+- semantic similarity
+- content overlap
+- title overlap
+
+while preserving deterministic behaviour and explainable ranking.
+
+The next milestone introduces entity-aware retrieval using the existing canonical entity model without increasing architectural complexity.

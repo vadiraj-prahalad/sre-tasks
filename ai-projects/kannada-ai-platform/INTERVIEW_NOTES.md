@@ -174,3 +174,50 @@ Validation includes
 - quality metrics
 
 This creates defense-in-depth instead of trusting AI output.
+
+# Interview Topic — Retrieval Observability
+
+## Question
+
+How do you debug retrieval failures in a production RAG system?
+
+## Answer
+
+I separated retrieval evaluation from answer generation.
+
+The retriever exposes:
+
+- semantic similarity
+- lexical overlap
+- title overlap
+- bounded retrieval score
+- source collection
+- provenance
+
+This allows retrieval failures to be diagnosed deterministically before involving the LLM.
+
+---
+
+# Interview Topic — Why Build a Retrieval Baseline?
+
+A retriever should not be optimized blindly.
+
+Before changing ranking algorithms, I measured:
+
+- Hit@1
+- Hit@3
+- MRR
+- latency
+- ranking signals
+
+Only measured failures justify architectural changes.
+
+---
+
+# Interview Topic — Canonical Entity Resolution
+
+Entity resolution happens before retrieval.
+
+The retriever receives canonical identities rather than arbitrary user input.
+
+This keeps retrieval deterministic while allowing multiple user spellings and aliases.

@@ -231,3 +231,101 @@ Editorial quality should never depend solely on the LLM.
 Status
 
 Accepted
+
+# Decision 014 — Measure Retrieval Before Optimizing
+
+## Date
+
+2026-07-15
+
+## Problem
+
+Retrieval improvements were being implemented without objective measurements.
+
+This risked introducing additional heuristics without understanding the actual failure modes.
+
+## Decision
+
+Introduce a dedicated Retrieval Baseline Evaluator before further retriever enhancements.
+
+The evaluator measures:
+
+- Hit@1
+- Hit@3
+- Mean Reciprocal Rank
+- Retrieval latency
+- Semantic similarity
+- Content overlap bonus
+- Title overlap bonus
+
+## Benefits
+
+- Objective regression detection
+- Repeatable benchmarking
+- Data-driven optimization
+- Safer architectural evolution
+
+## Consequences
+
+Future retrieval work must be justified by measured evidence rather than assumptions.
+
+Status:
+
+Accepted
+
+---
+
+# Decision 015 — Retrieval Observability
+
+## Problem
+
+Retrieval failures could not be explained from runtime output.
+
+## Decision
+
+Expose deterministic retrieval signals through Developer Trace.
+
+Recorded signals include:
+
+- semantic similarity
+- content overlap
+- title overlap
+- bounded score
+- document source
+- document provenance
+
+## Benefits
+
+- Easier debugging
+- Explainable retrieval
+- Better production diagnostics
+- Faster regression analysis
+
+Status:
+
+Accepted
+
+---
+
+# Decision 016 — Canonical Entity Resolution Before Retrieval
+
+## Problem
+
+Multiple spellings of the same entity produced inconsistent retrieval behaviour.
+
+## Decision
+
+Resolve canonical identity before retrieval.
+
+Retrievers should operate on canonical entities instead of raw user text.
+
+## Benefits
+
+- Lower retriever complexity
+- Better multilingual support
+- Stable retrieval behaviour
+- Cleaner architecture
+
+Status:
+
+Accepted

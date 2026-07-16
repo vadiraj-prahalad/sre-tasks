@@ -4,6 +4,9 @@ import re
 import sqlite3
 from pathlib import Path
 
+from app.models.knowledge_entity import (
+    KnowledgeEntity,
+)
 from app.services.embedding_service import (
     get_embedding,
 )
@@ -141,6 +144,7 @@ def retrieve_chunks(
     question: str,
     limit: int = 3,
     *,
+    entity: KnowledgeEntity | None = None,
     evaluation_mode: bool = False,
 ) -> list[dict]:
     """
@@ -150,13 +154,26 @@ def retrieve_chunks(
 
     1. Semantic embedding similarity.
     2. Meaningful lexical overlap with chunk content.
-    3. Meaningful lexical overlap with document title.
+    3. Meaningful lexical overlap with the document title.
 
     Raw scores are used for ranking so score differences are preserved.
 
     Bounded scores are exposed to confidence and API consumers so
     operational thresholds remain interpretable.
+
+    The optional KnowledgeEntity carries canonical identity from the
+    orchestration layer. Entity-aware ranking will consume this object
+    in a later milestone.
+
+    Entity resolution is intentionally not performed inside this
+    service. The router resolves the entity once and passes it
+    downstream.
     """
+
+    # The canonical entity is intentionally forwarded through the
+    # retrieval boundary but is not yet used for ranking. This keeps
+    # the current milestone behaviour-neutral.
+    _ = entity
 
     question_embedding = get_embedding(
         question
@@ -168,24 +185,27 @@ def retrieve_chunks(
 
     cursor = connection.cursor()
 
-    cursor.execute(
-        """
-        SELECT
-            chunks.chunk_text,
-            chunks.embedding,
-            documents.title,
-            documents.source_name,
-            documents.source_url
-        FROM chunks
-        JOIN documents
-            ON chunks.document_id = documents.id
-        WHERE chunks.embedding IS NOT NULL
-          AND documents.status = 'active'
-        """
-    )
+    try:
+        cursor.execute(
+            """
+            SELECT
+                chunks.chunk_text,
+                chunks.embedding,
+                documents.title,
+                documents.source_name,
+                documents.source_url
+            FROM chunks
+            JOIN documents
+                ON chunks.document_id = documents.id
+            WHERE chunks.embedding IS NOT NULL
+              AND documents.status = 'active'
+            """
+        )
 
-    rows = cursor.fetchall()
-    connection.close()
+        rows = cursor.fetchall()
+
+    finally:
+        connection.close()
 
     scored_chunks: list[dict] = []
 

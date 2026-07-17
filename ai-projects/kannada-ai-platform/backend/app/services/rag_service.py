@@ -14,6 +14,9 @@ from app.services.answer_strategy import (
 from app.services.retriever_service import (
     retrieve_chunks,
 )
+from app.services.retrieval_explanation_service import (
+    explain_retrieval,
+)
 
 
 MIN_SIMILARITY_SCORE = 0.70
@@ -188,88 +191,75 @@ def answer_from_rag_with_trace(
 
     top_chunk = chunks[0]
 
-    best_score = float(
-        top_chunk.get(
-            "score",
-            0.0,
-        )
+    retrieval_explanation = explain_retrieval(
+        selected_chunk=top_chunk,
+        result_count=len(chunks),
     )
 
-    best_raw_score = float(
-        top_chunk.get(
-            "raw_score",
-            best_score,
-        )
+    best_score = (
+        retrieval_explanation.bounded_score
     )
 
-    best_semantic_score = float(
-        top_chunk.get(
-            "semantic_score",
-            0.0,
-        )
+    trace.append(
+        {
+            "step": "Retrieval Explanation",
+            "status": "completed",
+            "details": {
+                "selected_title": (
+                    retrieval_explanation.selected_title
+                ),
+                "reasons": list(
+                    retrieval_explanation.reasons
+                ),
+                "metrics": {
+                    "semantic_score": (
+                        retrieval_explanation.semantic_score
+                    ),
+                    "content_bonus": (
+                        retrieval_explanation.content_bonus
+                    ),
+                    "title_bonus": (
+                        retrieval_explanation.title_bonus
+                    ),
+                    "entity_title_bonus": (
+                        retrieval_explanation.entity_title_bonus
+                    ),
+                    "raw_score": (
+                        retrieval_explanation.raw_score
+                    ),
+                    "bounded_score": (
+                        retrieval_explanation.bounded_score
+                    ),
+                },
+                "source_name": (
+                    retrieval_explanation.source_name
+                ),
+                "provenance": (
+                    retrieval_explanation.provenance
+                ),
+            },
+        }
     )
-
-    best_content_bonus = float(
-        top_chunk.get(
-            "keyword_bonus",
-            0.0,
-        )
-    )
-
-    best_title_bonus = float(
-        top_chunk.get(
-            "title_bonus",
-            0.0,
-        )
-    )
-    best_entity_title_bonus = float(
-    top_chunk.get(
-        "entity_title_bonus",
-        0.0,
-        )
-    )
-
-    best_title = str(
-        top_chunk.get(
-            "title",
-            "",
-        )
-    )
-
-    best_source_name = str(
-        top_chunk.get(
-            "source_name",
-            "unknown",
-        )
-    )
-
-    best_provenance = str(
-        top_chunk.get(
-            "source_url",
-        )
-        or "not_recorded"
-    )
-
     trace.append(
         {
             "step": "Top Source",
             "status": "completed",
             "details": (
-                f"Title: {best_title} | "
+                f"Title: {retrieval_explanation.selected_title} | "
                 "semantic="
-                f"{best_semantic_score:.4f} | "
+                f"{retrieval_explanation.semantic_score:.4f} | "
                 "content_bonus="
-                f"{best_content_bonus:.4f} | "
+                f"{retrieval_explanation.content_bonus:.4f} | "
                 "title_bonus="
-                f"{best_title_bonus:.4f} | "
+                f"{retrieval_explanation.title_bonus:.4f} | "
                 "entity_title_bonus="
-                f"{best_entity_title_bonus:.4f} | "
+                f"{retrieval_explanation.entity_title_bonus:.4f} | "
                 "raw_score="
-                f"{best_raw_score:.4f} | "
+                f"{retrieval_explanation.raw_score:.4f} | "
                 "bounded_score="
-                f"{best_score:.4f} | "
-                f"source={best_source_name} | "
-                f"provenance={best_provenance}"
+                f"{retrieval_explanation.bounded_score:.4f} | "
+                f"source={retrieval_explanation.source_name} | "
+                f"provenance={retrieval_explanation.provenance}"
             ),
         }
     )

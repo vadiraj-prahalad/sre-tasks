@@ -145,11 +145,12 @@ def entity_title_bonus(
     title: str,
 ) -> float:
     """
-    Reward document-title overlap with a trusted canonical entity.
+    Reward document-title overlap with a trusted entity identity.
 
     Only high-confidence curated alias resolutions are eligible.
-    Lower-confidence normalized phrases may represent relational or
-    descriptive queries rather than a single canonical entity.
+    Multiple canonical names, aliases, and trusted query surface forms
+    may represent the same entity, so the strongest individual match is
+    used rather than accumulating bonuses.
     """
 
     if entity is None:
@@ -164,18 +165,30 @@ def entity_title_bonus(
     if entity.confidence < 0.90:
         return 0.0
 
-    canonical_name = (
-        entity.resolved_topic or ""
-    ).strip()
+    candidate_names = [
+        entity.resolved_topic,
+        entity.canonical_name_en,
+        entity.canonical_name_kn,
+        entity.display_name,
+        entity.normalized_query,
+        entity.original_query,
+        *entity.aliases_en,
+        *entity.aliases_kn,
+    ]
 
-    if not canonical_name:
-        return 0.0
+    bonuses = [
+        keyword_bonus(
+            search_text=name,
+            target_text=title,
+        )
+        for name in candidate_names
+        if name and name.strip()
+    ]
 
-    return keyword_bonus(
-        search_text=canonical_name,
-        target_text=title,
+    return max(
+        bonuses,
+        default=0.0,
     )
-
 
 def retrieve_chunks(
     question: str,

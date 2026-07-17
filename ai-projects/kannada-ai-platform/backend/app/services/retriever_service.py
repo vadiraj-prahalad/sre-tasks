@@ -140,6 +140,43 @@ def keyword_bonus(
     )
 
 
+def entity_title_bonus(
+    entity: KnowledgeEntity | None,
+    title: str,
+) -> float:
+    """
+    Reward document-title overlap with a trusted canonical entity.
+
+    Only high-confidence curated alias resolutions are eligible.
+    Lower-confidence normalized phrases may represent relational or
+    descriptive queries rather than a single canonical entity.
+    """
+
+    if entity is None:
+        return 0.0
+
+    if (
+        entity.resolution_method
+        != "alias_lookup"
+    ):
+        return 0.0
+
+    if entity.confidence < 0.90:
+        return 0.0
+
+    canonical_name = (
+        entity.resolved_topic or ""
+    ).strip()
+
+    if not canonical_name:
+        return 0.0
+
+    return keyword_bonus(
+        search_text=canonical_name,
+        target_text=title,
+    )
+
+
 def retrieve_chunks(
     question: str,
     limit: int = 3,
@@ -155,25 +192,20 @@ def retrieve_chunks(
     1. Semantic embedding similarity.
     2. Meaningful lexical overlap with chunk content.
     3. Meaningful lexical overlap with the document title.
+    4. Canonical entity overlap with the document title.
 
     Raw scores are used for ranking so score differences are preserved.
 
     Bounded scores are exposed to confidence and API consumers so
     operational thresholds remain interpretable.
 
-    The optional KnowledgeEntity carries canonical identity from the
-    orchestration layer. Entity-aware ranking will consume this object
-    in a later milestone.
+    High-confidence alias-resolved entities contribute a controlled
+    canonical-title overlap signal.
 
     Entity resolution is intentionally not performed inside this
     service. The router resolves the entity once and passes it
     downstream.
     """
-
-    # The canonical entity is intentionally forwarded through the
-    # retrieval boundary but is not yet used for ranking. This keeps
-    # the current milestone behaviour-neutral.
-    _ = entity
 
     question_embedding = get_embedding(
         question
@@ -237,10 +269,18 @@ def retrieve_chunks(
             target_text=title,
         )
 
+        canonical_title_bonus = (
+            entity_title_bonus(
+                entity=entity,
+                title=title,
+            )
+        )
+
         raw_score = (
             semantic_score
             + content_bonus
             + title_bonus
+            + canonical_title_bonus
         )
 
         bounded_score = min(
@@ -265,6 +305,9 @@ def retrieve_chunks(
                 "title_bonus": (
                     title_bonus
                 ),
+                "entity_title_bonus": (
+                    canonical_title_bonus
+                ),
                 "title": title,
                 "source_name": row[3],
                 "source_url": row[4],
@@ -274,6 +317,7 @@ def retrieve_chunks(
     scored_chunks.sort(
         key=lambda item: (
             item["raw_score"],
+            item["entity_title_bonus"],
             item["title_bonus"],
             item["keyword_bonus"],
             item["semantic_score"],

@@ -222,6 +222,12 @@ def answer_from_rag_with_trace(
             0.0,
         )
     )
+    best_entity_title_bonus = float(
+    top_chunk.get(
+        "entity_title_bonus",
+        0.0,
+        )
+    )
 
     best_title = str(
         top_chunk.get(
@@ -256,6 +262,8 @@ def answer_from_rag_with_trace(
                 f"{best_content_bonus:.4f} | "
                 "title_bonus="
                 f"{best_title_bonus:.4f} | "
+                "entity_title_bonus="
+                f"{best_entity_title_bonus:.4f} | "
                 "raw_score="
                 f"{best_raw_score:.4f} | "
                 "bounded_score="

@@ -2,6 +2,7 @@ import json
 import math
 import re
 import sqlite3
+import unicodedata
 from pathlib import Path
 
 from app.models.knowledge_entity import (
@@ -31,6 +32,15 @@ GENERIC_QUERY_WORDS = {
     "ಏಕೆ",
 }
 
+KANNADA_VIRAMA = "\u0CCD"
+
+ZERO_WIDTH_CHARACTERS = {
+    "\u200B",  # Zero Width Space
+    "\u200C",  # Zero Width Non-Joiner
+    "\u200D",  # Zero Width Joiner
+    "\uFEFF",  # Zero Width No-Break Space
+}
+
 
 def cosine_similarity(
     vector_a: list[float],
@@ -42,8 +52,10 @@ def cosine_similarity(
 
     dot_product = sum(
         value_a * value_b
-        for value_a, value_b
-        in zip(vector_a, vector_b)
+        for value_a, value_b in zip(
+            vector_a,
+            vector_b,
+        )
     )
 
     magnitude_a = math.sqrt(
@@ -82,10 +94,15 @@ def _normalize_terms(
     than the requested entity, so they must not influence ranking.
     """
 
+    normalized_text = unicodedata.normalize(
+        "NFC",
+        text or "",
+    ).casefold()
+
     normalized_text = re.sub(
         r"[^\w\u0C80-\u0CFF]+",
         " ",
-        (text or "").lower(),
+        normalized_text,
     )
 
     terms: list[str] = []
@@ -106,6 +123,35 @@ def _normalize_terms(
     return terms
 
 
+def _fold_kannada_for_matching(
+    text: str,
+) -> str:
+    """
+    Produce a conservative Kannada lexical-comparison form.
+
+    Kannada names can contain explicit virama and zero-width characters
+    that are absent from commonly typed query variants.
+
+    This folded representation is used only for lexical comparison.
+    Stored content, displayed text, and embeddings remain unchanged.
+    """
+
+    normalized_text = unicodedata.normalize(
+        "NFC",
+        text or "",
+    ).casefold()
+
+    return "".join(
+        character
+        for character in normalized_text
+        if (
+            character != KANNADA_VIRAMA
+            and character
+            not in ZERO_WIDTH_CHARACTERS
+        )
+    )
+
+
 def keyword_bonus(
     search_text: str,
     target_text: str,
@@ -113,26 +159,48 @@ def keyword_bonus(
     """
     Reward meaningful lexical overlap.
 
-    Every meaningful query term found in the target receives a small,
-    controlled bonus. Generic question words are ignored.
+    Exact lexical matching is attempted first. Kannada terms also receive
+    a conservative orthographic comparison that ignores virama and
+    zero-width join-control characters.
 
-    The bonus is capped so lexical matching supports semantic retrieval
-    without overwhelming the embedding score.
+    Each meaningful query term contributes at most once. The total bonus
+    remains capped so lexical matching cannot overwhelm semantic
+    retrieval.
     """
 
     keywords = _normalize_terms(
         search_text
     )
 
-    target_lower = (
-        target_text or ""
-    ).lower()
+    target_normalized = unicodedata.normalize(
+        "NFC",
+        target_text or "",
+    ).casefold()
 
-    matched_keywords = sum(
-        1
-        for keyword in keywords
-        if keyword in target_lower
+    folded_target = _fold_kannada_for_matching(
+        target_text
     )
+
+    matched_keywords = 0
+
+    for keyword in keywords:
+        if keyword in target_normalized:
+            matched_keywords += 1
+            continue
+
+        folded_keyword = (
+            _fold_kannada_for_matching(
+                keyword
+            )
+        )
+
+        if (
+            folded_keyword
+            and len(folded_keyword) >= 3
+            and folded_keyword
+            in folded_target
+        ):
+            matched_keywords += 1
 
     return min(
         matched_keywords * 0.08,
@@ -148,9 +216,10 @@ def entity_title_bonus(
     Reward document-title overlap with a trusted entity identity.
 
     Only high-confidence curated alias resolutions are eligible.
+
     Multiple canonical names, aliases, and trusted query surface forms
-    may represent the same entity, so the strongest individual match is
-    used rather than accumulating bonuses.
+    can represent the same entity. The strongest individual match is
+    used instead of accumulating bonuses from multiple identity forms.
     """
 
     if entity is None:
@@ -190,6 +259,7 @@ def entity_title_bonus(
         default=0.0,
     )
 
+
 def retrieve_chunks(
     question: str,
     limit: int = 3,
@@ -205,7 +275,7 @@ def retrieve_chunks(
     1. Semantic embedding similarity.
     2. Meaningful lexical overlap with chunk content.
     3. Meaningful lexical overlap with the document title.
-    4. Canonical entity overlap with the document title.
+    4. Trusted entity overlap with the document title.
 
     Raw scores are used for ranking so score differences are preserved.
 
@@ -213,7 +283,7 @@ def retrieve_chunks(
     operational thresholds remain interpretable.
 
     High-confidence alias-resolved entities contribute a controlled
-    canonical-title overlap signal.
+    title-overlap signal.
 
     Entity resolution is intentionally not performed inside this
     service. The router resolves the entity once and passes it
@@ -345,15 +415,11 @@ def retrieve_chunks(
         return scored_chunks[:limit]
 
     top_raw_score = (
-        scored_chunks[0][
-            "raw_score"
-        ]
+        scored_chunks[0]["raw_score"]
     )
 
     second_raw_score = (
-        scored_chunks[1][
-            "raw_score"
-        ]
+        scored_chunks[1]["raw_score"]
         if len(scored_chunks) > 1
         else 0.0
     )

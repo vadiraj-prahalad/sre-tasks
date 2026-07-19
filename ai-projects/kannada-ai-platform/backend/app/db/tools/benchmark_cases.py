@@ -1,8 +1,8 @@
 """
 Retrieval benchmark case definitions.
 
-Contains benchmark data only. Evaluation logic belongs in
-evaluate_retrieval_baseline.py.
+Contains benchmark data only.
+Evaluation logic belongs in evaluate_retrieval_baseline.py.
 """
 
 from __future__ import annotations
@@ -16,7 +16,11 @@ class RetrievalCase:
     acceptable_title_terms: tuple[str, ...]
 
 
-TEST_CASES = [
+# ==========================================================
+# Canonical Entity Retrieval
+# ==========================================================
+
+CANONICAL_CASES = [
     RetrievalCase(
         question="ಕುವೆಂಪು ಯಾರು?",
         acceptable_title_terms=(
@@ -24,9 +28,7 @@ TEST_CASES = [
         ),
     ),
     RetrievalCase(
-        question=(
-            "ಕುವೆಂಪು ಕನ್ನಡ ಸಾಹಿತ್ಯಕ್ಕೆ ನೀಡಿದ ಕೊಡುಗೆ"
-        ),
+        question="ಕುವೆಂಪು ಕನ್ನಡ ಸಾಹಿತ್ಯಕ್ಕೆ ನೀಡಿದ ಕೊಡುಗೆ",
         acceptable_title_terms=(
             "Kuvempu",
             "ಕುವೆಂಪು",
@@ -52,21 +54,27 @@ TEST_CASES = [
         ),
     ),
     RetrievalCase(
-        question=(
-            "ಉಡುಪಿ ಮಠದ ಜೊತೆ ಮಧ್ವರ ಸಂಬಂಧ ಏನು"
-        ),
-        acceptable_title_terms=(
-            "Madhwacharya",
-            "ಮಧ್ವಾಚಾರ್ಯ",
-        ),
-    ),
-    RetrievalCase(
         question="ವಿಷ್ಣುವರ್ಧನ್ ಯಾರು?",
         acceptable_title_terms=(
             "ವಿಷ್ಣುವರ್ಧನ್",
             "Vishnuvardhan",
         ),
     ),
+    RetrievalCase(
+        question="ಮೈಸೂರು ಅರಮನೆ ಬಗ್ಗೆ ಹೇಳಿ",
+        acceptable_title_terms=(
+            "ಮೈಸೂರು ಅರಮನೆ",
+            "Mysore Palace",
+        ),
+    ),
+]
+
+
+# ==========================================================
+# Alias Resolution Retrieval
+# ==========================================================
+
+ALIAS_CASES = [
     RetrievalCase(
         question="ಡಾ ವಿಷ್ಣುವರ್ಧನ್ ಬಗ್ಗೆ ಹೇಳಿ",
         acceptable_title_terms=(
@@ -83,11 +91,52 @@ TEST_CASES = [
             "ರಾಜ್‌ಕುಮಾರ್",
         ),
     ),
+]
+
+
+# ==========================================================
+# Relationship Retrieval
+# ==========================================================
+
+RELATIONSHIP_CASES = [
     RetrievalCase(
-        question="ಮೈಸೂರು ಅರಮನೆ ಬಗ್ಗೆ ಹೇಳಿ",
+        question="ಉಡುಪಿ ಮಠದ ಜೊತೆ ಮಧ್ವರ ಸಂಬಂಧ ಏನು",
         acceptable_title_terms=(
-            "ಮೈಸೂರು ಅರಮನೆ",
-            "Mysore Palace",
+            "Madhwacharya",
+            "ಮಧ್ವಾಚಾರ್ಯ",
         ),
     ),
 ]
+
+
+# ==========================================================
+# Mixed Language Retrieval
+# (Will be expanded in future milestones)
+# ==========================================================
+
+MIXED_LANGUAGE_CASES = []
+
+
+# ==========================================================
+# Negative Retrieval
+# (Will be expanded in future milestones)
+# ==========================================================
+
+NEGATIVE_CASES = []
+
+
+# ==========================================================
+# Complete Benchmark Suite
+#
+# The evaluator imports only TEST_CASES.
+# Category-wise metrics can later iterate over the individual
+# category lists without modifying the evaluator.
+# ==========================================================
+
+TEST_CASES = (
+    CANONICAL_CASES
+    + ALIAS_CASES
+    + RELATIONSHIP_CASES
+    + MIXED_LANGUAGE_CASES
+    + NEGATIVE_CASES
+)

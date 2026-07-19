@@ -22,6 +22,9 @@ from dataclasses import dataclass
 from app.services.retriever_service import (
     retrieve_chunks,
 )
+from app.services.entity_resolution_service import (
+    resolve_entity,
+)
 
 
 @dataclass(frozen=True)
@@ -156,11 +159,17 @@ def evaluate() -> dict:
     for case in TEST_CASES:
         started = time.perf_counter()
 
+        entity = resolve_entity(
+            topic=case.question,
+            category="general",
+        )
+
         results = retrieve_chunks(
-        question=case.question,
-        limit=3,
-        evaluation_mode=True,
-    )
+            question=case.question,
+            limit=3,
+            entity=entity,
+            evaluation_mode=True,
+)
 
         latency_ms = (
             time.perf_counter()
@@ -314,6 +323,12 @@ def evaluate() -> dict:
             f"Question : {case.question}"
         )
         print(
+            "Entity   : "
+            f"{entity.preferred_name} | "
+            f"method={entity.resolution_method} | "
+            f"confidence={entity.confidence:.2f}"
+        )
+        print(
             "Expected : "
             + " OR ".join(
                 case.acceptable_title_terms
@@ -352,6 +367,23 @@ def evaluate() -> dict:
         print(
             f"Result   : {status}"
         )
+
+        if status == "FAIL":
+            print("\nTop 3 Retrieved Candidates")
+            print("-" * 40)
+
+            for index, candidate in enumerate(results[:3], start=1):
+                print(f"{index}. {candidate['title']}")
+                print(f"   Raw Score : {candidate['raw_score']:.4f}")
+                print(f"   Semantic  : {candidate['semantic_score']:.4f}")
+                print(f"   Content   : {candidate['keyword_bonus']:.4f}")
+                print(f"   Title     : {candidate['title_bonus']:.4f}")
+                print(
+                    "   Entity    : "
+                    f"{candidate['entity_title_bonus']:.4f}"
+                )
+                print()
+
         print("-" * 88)
 
         if (

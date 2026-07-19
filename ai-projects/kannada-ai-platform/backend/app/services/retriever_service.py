@@ -1,8 +1,6 @@
 import json
 import math
-import re
 import sqlite3
-import unicodedata
 from pathlib import Path
 
 from app.models.knowledge_entity import (
@@ -12,35 +10,18 @@ from app.services.embedding_service import (
     get_embedding,
 )
 
+from app.services.text_normalization_service import (
+    fold_kannada_for_matching,
+    normalize_terms,
+    normalize_unicode,
+)
+
 
 DB_PATH = (
     Path(__file__).resolve().parent.parent
     / "db"
     / "knowledge.db"
 )
-
-GENERIC_QUERY_WORDS = {
-    "ಯಾರು",
-    "ಏನು",
-    "ಎಂದರೇನು",
-    "ಬಗ್ಗೆ",
-    "ಹೇಳಿ",
-    "ಜೊತೆ",
-    "ಮತ್ತು",
-    "ಯಾವುದು",
-    "ಹೇಗೆ",
-    "ಏಕೆ",
-}
-
-KANNADA_VIRAMA = "\u0CCD"
-
-ZERO_WIDTH_CHARACTERS = {
-    "\u200B",  # Zero Width Space
-    "\u200C",  # Zero Width Non-Joiner
-    "\u200D",  # Zero Width Joiner
-    "\uFEFF",  # Zero Width No-Break Space
-}
-
 
 def cosine_similarity(
     vector_a: list[float],
@@ -84,74 +65,6 @@ def cosine_similarity(
     )
 
 
-def _normalize_terms(
-    text: str,
-) -> list[str]:
-    """
-    Extract meaningful lowercase terms for lexical matching.
-
-    Generic Kannada question words describe question structure rather
-    than the requested entity, so they must not influence ranking.
-    """
-
-    normalized_text = unicodedata.normalize(
-        "NFC",
-        text or "",
-    ).casefold()
-
-    normalized_text = re.sub(
-        r"[^\w\u0C80-\u0CFF]+",
-        " ",
-        normalized_text,
-    )
-
-    terms: list[str] = []
-
-    for raw_word in normalized_text.split():
-        word = raw_word.strip()
-
-        if len(word) < 3:
-            continue
-
-        if word in GENERIC_QUERY_WORDS:
-            continue
-
-        terms.append(
-            word
-        )
-
-    return terms
-
-
-def _fold_kannada_for_matching(
-    text: str,
-) -> str:
-    """
-    Produce a conservative Kannada lexical-comparison form.
-
-    Kannada names can contain explicit virama and zero-width characters
-    that are absent from commonly typed query variants.
-
-    This folded representation is used only for lexical comparison.
-    Stored content, displayed text, and embeddings remain unchanged.
-    """
-
-    normalized_text = unicodedata.normalize(
-        "NFC",
-        text or "",
-    ).casefold()
-
-    return "".join(
-        character
-        for character in normalized_text
-        if (
-            character != KANNADA_VIRAMA
-            and character
-            not in ZERO_WIDTH_CHARACTERS
-        )
-    )
-
-
 def keyword_bonus(
     search_text: str,
     target_text: str,
@@ -168,16 +81,15 @@ def keyword_bonus(
     retrieval.
     """
 
-    keywords = _normalize_terms(
+    keywords = normalize_terms(
         search_text
     )
 
-    target_normalized = unicodedata.normalize(
-        "NFC",
-        target_text or "",
-    ).casefold()
+    target_normalized = normalize_unicode(
+        target_text
+    )
 
-    folded_target = _fold_kannada_for_matching(
+    folded_target = fold_kannada_for_matching(
         target_text
     )
 
@@ -189,7 +101,7 @@ def keyword_bonus(
             continue
 
         folded_keyword = (
-            _fold_kannada_for_matching(
+            fold_kannada_for_matching(
                 keyword
             )
         )
@@ -206,7 +118,6 @@ def keyword_bonus(
         matched_keywords * 0.08,
         0.24,
     )
-
 
 def entity_title_bonus(
     entity: KnowledgeEntity | None,
